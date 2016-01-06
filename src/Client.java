@@ -1,15 +1,11 @@
-
-
 import java.io.BufferedReader;
 import java.io.IOException;
-import java.io.InputStream;
 import java.io.InputStreamReader;
 import java.io.ObjectInputStream;
 import java.io.ObjectOutputStream;
 import java.net.InetAddress;
 import java.net.Socket;
 import java.net.UnknownHostException;
-import java.util.Scanner;
 
 public class Client  {
 	//Fields
@@ -22,8 +18,7 @@ public class Client  {
 
 	//Constructor
 	Client() throws UnknownHostException {
-		//server = InetAddress.getByName("2.106.191.230");
-		server = InetAddress.getByName("10.16.165.221");
+		server = InetAddress.getByName("127.0.0.1");
 
 	}
 	
