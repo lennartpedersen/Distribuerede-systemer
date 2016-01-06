@@ -22,8 +22,7 @@ public class Client  {
 
 	//Constructor
 	Client() throws UnknownHostException {
-		//server = InetAddress.getByName("2.106.191.230");
-		server = InetAddress.getByName("10.16.165.221");
+		server = InetAddress.getByName("127.0.0.1");
 
 	}
 	
