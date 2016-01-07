@@ -7,7 +7,7 @@ public class Command {
 	private User user;
 	private int choice;
 	
-	public Command(String command, int gameSize, String gameName) { //Request game
+	public Command(String command, String gameName, int gameSize) { //Request game
 		this.command = command;
 		this.gameSize = gameSize;
 		this.gameName = gameName;
