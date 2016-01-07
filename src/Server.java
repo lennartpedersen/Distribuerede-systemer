@@ -4,55 +4,53 @@ import java.io.ObjectInputStream;
 import java.io.ObjectOutputStream;
 import java.net.ServerSocket;
 import java.net.Socket;
+import java.net.SocketException;
 import java.util.ArrayList;
 
 public class Server {
 	
 	//Fields
-	private static int clientCount; //number of clients connected, used to identify each client
-	private ArrayList<ClientThread> al; //an arrayList to keep the list of the clients
 	private int port = 1500; //the port number to listen for connections
+	private ServerSocket serverSocket; //the socket used by the server
+	private ArrayList<ClientThread> threadlist = new ArrayList<ClientThread>();
 	
 	//Constructor
-	public Server() {
-		al = new ArrayList<ClientThread>();
-	}
+	public Server() {}
 	
 	//Methods
 	public void start() {
 		//create socket server and wait for connection requests on port
-		try 
-		{
-			//the socket used by the server
-			ServerSocket serverSocket = new ServerSocket(port);
-
+		try {
+			serverSocket = new ServerSocket(port);
+		} catch (IOException e) {
+			throw new RuntimeException("Failed to open port "+port, e);
+		}
+		try {
 			//infinite loop to wait for connections
-			while(true) 
-			{
-				System.out.println("Server waiting for Clients on port " + port);
-				
-				Socket socket = serverSocket.accept();  	//accept connection
-				ClientThread t = new ClientThread(socket);  //make a thread for it
-				al.add(t);									//save the thread in the list
-				t.start();
-				System.out.println("New User connected!");
+			while(true) {
+				Socket socket = serverSocket.accept();  	//wait for connection to accept
+				ClientThread thread = new ClientThread(socket);
+				threadlist.add(thread);		//make a new ClientThread to handle connection
+				thread.start();
 			}
+		} catch (SocketException e) { //Exception thrown if server socket is closed while Socket.accept() is running.
+			System.err.println("Server is closing...");
+			return;
+		} catch (IOException e) {
+			e.printStackTrace();
 		}
-		catch (IOException e) {
-            e.printStackTrace();
+	}
+	
+	public void stop() throws IOException{ //Stops the server and closes sockets. Call with GUI thread.
+		serverSocket.close();
+		for (ClientThread thread : threadlist){
+			thread.close();
 		}
-	}		
-    
-	private synchronized void broadcast(String message) { //Used to broadcast a message to all Clients
-		//loop through clients to send message through output datastreams, remove users if it fails (disconnected).
-		for(int i = al.size(); --i >= 0;) {
-			ClientThread ct = al.get(i);
-			//try to write to the Client if it fails remove it from the list
-			if(!ct.writeMsg(message)) {
-				al.remove(i);
-				System.out.println("Disconnected Client.");
-			}
-		}
+		System.err.println("Server closed.");
+	}
+	
+	public void remove(ClientThread clientThread) {
+		threadlist.remove(clientThread);
 	}
 	
 	public static void main(String[] args) {
@@ -63,18 +61,15 @@ public class Server {
 	
 	
 	
-	class ClientThread extends Thread { //Thread used to read messages from each client
+	class ClientThread extends Thread { //Threads used to perform tasks for individual clients
 		//Fields
-		Socket socket; //the clients connection
-		ObjectInputStream sInput; //input for client
-		ObjectOutputStream sOutput; //output for client
-		
-		int id; //unique id
+		Socket socket; //the client's connection
+		ObjectInputStream sInput; //input from client
+		ObjectOutputStream sOutput; //output to client
+		Object task; //command to be processed.
 
 		//Constructor
 		ClientThread(Socket socket) {
-			//a unique id
-			id = ++clientCount;
 			this.socket = socket;
 			//Creating datastreams to transfer data between server and client
 			try
@@ -83,41 +78,51 @@ public class Server {
 				sInput  = new ObjectInputStream(socket.getInputStream());
 			}
 			catch (IOException e) {
-				return;
+				System.err.println("Connection to Client '"+socket.getInetAddress()+"' failed.");
+				close();
+			}
+			//Read Command object from inputstream.
+			try {
+				task = (Object) sInput.readObject();
+			} catch (ClassNotFoundException e) {
+				System.err.println("Invalid data from client '"+socket.getInetAddress()+"', connection closed.");
+				close();
+			} catch (IOException e) {
+				System.err.println("Connection with client '"+socket.getInetAddress()+"' interrupted.");
+				close();
 			}
 		}
 
 		//Methods
-		public void run() { //will run forever
-			while(true) {
-				//read a message
-				try {
-					String message = (String) sInput.readObject();
-					//broadcast message to all clients
-					broadcast(message);
-				}
-				catch (Exception e) {
-					break;
-				}
+		public void run() { //TODO Decode command object and perform necessary tasks.
+			if (socket == null) return; //Means something went wrong during thread construction.
+			
+			//TODO Write code here.
+			
+			remove(this); //Removes this ClientThread from Server's threadlist.
+			close(); //Closes all streams. DO NOT REMOVE.
+		}
+		
+		public void sendData(Object data){ //Sends object to connected client.
+			try {
+				sOutput.writeObject(data);
+			} catch (IOException e) {
+				System.err.println("Error sending data to client.");
 			}
 		}
-
-		private boolean writeMsg(String msg) { //write a message to the Client output stream if it is still connected.
-			//if Client is still connected send the message to it, else return false to disconnect client
-			if(socket.isConnected()) {
-				//write the message to the stream
-				try {
-					sOutput.writeObject(msg);
-				}
-				catch(IOException e) { //IO error
-					System.out.println("Error sending message");
-				}
-				return true;
-			}
-			else {
-				return false;
-			}
+		
+		public void close() { //Try to close everything in this thread. Should always be called before thread runs out. 
+			try {
+				if (sOutput != null) sOutput.close();
+			} catch (IOException e) {}
+			try {
+				if (sInput != null) sInput.close();
+			} catch (IOException e) {}
+			try {
+				if (socket != null) socket.close();
+			} catch (IOException e) {}
 		}
 	}
+
 }
 
