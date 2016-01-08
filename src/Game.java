@@ -7,7 +7,7 @@ import java.util.Map.Entry;
 public class Game {
 
 	/*
-	 * phases: 0 - Start - send question 1 - Answering - Answers are recieved
+	 * phases: 0 - Start - send question 1 - Answering - Answers are received
 	 * and the list is sent to all users for the CHoosing phase 2 - Choosing -
 	 * Answers are chosen and evaluated.
 	 */
@@ -120,7 +120,7 @@ public class Game {
 				nextPhase();
 
 			// if correct answer
-			if (answer.equals(this.currentQuestion.getAnswer())) {
+			if (checkAnswer(answer)answer.equals(this.currentQuestion.getAnswer())) {
 				IncerementScore(user, 3);
 				// user needs to give another answer
 				return true;
@@ -128,6 +128,7 @@ public class Game {
 			// Answer was false, user won't need to give another answer
 			return false;
 		}
+		return false;
 	}
 
 	public void addChoice(User user, String choice) throws Exception {
@@ -142,7 +143,7 @@ public class Game {
 		}
 	}
 
-	public void addUser(User user) {
+	public void addUser(User user) throws Exception {
 		if (this.users.size() < gameSize) {
 			this.users.add(user);
 
@@ -162,19 +163,13 @@ public class Game {
 	private boolean isStarted() {
 		return phase >= 0;
 	}
-<<<<<<< HEAD
-
-=======
 	
-
-	
-	public boolean checkAnswer(String correctAnswer, String userAnswer) {
+	public boolean checkAnswer(String correctAnswer) {
 		String cAnswer = correctAnswer.toLowerCase(),
-			   uAnswer = userAnswer.toLowerCase();
+			   uAnswer = currentQuestion.getAnswer().toLowerCase();
 		
 		// Add additional matching
 		
 		return cAnswer.equals(uAnswer);
 	}
->>>>>>> origin/helge
 }
