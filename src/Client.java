@@ -73,7 +73,6 @@ public class Client  {
 				if(option.equals("Join game")) {
 					gameName = st.nextToken();
 				} else {
-	
 					gameName = st.nextToken();
 					gameSize = Integer.parseInt(st.nextToken());
 				}
@@ -84,7 +83,7 @@ public class Client  {
 			}
 			else if(option.equals("Request game")) {
 				client.put(requestGame(gameSize,gameName));
-				client.put(joinGame(gameName,user));
+				client.put(joinGame(gameName,user)); //Automatically join the game you have created.
 			}
 		}
 	}
