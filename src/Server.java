@@ -74,7 +74,7 @@ public class Server {
 			throw new Exception("Name must contain alphabetic characters only.");
 		if (nameExists(name))
 			throw new Exception("A user with the entered name already exists.");
-		users.add(new User(name));
+		clientList.add(new User(name));
 	}
 	
 	public boolean alphabeticName(String name) {
@@ -86,7 +86,7 @@ public class Server {
 	}
 
 	public boolean nameExists(String name) {
-		for (User user : users)
+		for (User user : clientList)
 			if (name.equals(user.getName())) 
 				return true;		
 		return false;
@@ -99,10 +99,10 @@ public class Server {
 	}
 	
 	public void addUser(String gamename, User user){ //Add new user/player to game.
-		//TODO Check if game exists, respond.
+		//TODO Check if game exists, respond to client that requested the operation.
 		Game game = gameList.get(gamename);
 		//Add user to the game
-		game.AddUser(user);
+		game.addUser(user);
 		//Add user to clientList, for keeping track of current active game for user
 		user.setGame(game);
 		clientList.add(user);
@@ -120,10 +120,6 @@ public class Server {
 	
 	public void evaluateChoices(){ //No idea what this does...
 		//TODO
-	}
-	
-	public void doCommand(){ //Not used.
-		//ClientThreads main job.
 	}
 	
 	class ClientThread extends Thread { //Threads used to perform tasks for individual clients
@@ -156,7 +152,10 @@ public class Server {
 				switch (command){ //Decode command switch
 					case "requestgame": //Creates a new game
 						//TODO Ping Pong with Client in case of error.
-						newGame(task.getGameName(), new Game(task.getUser(), task.getGameSize(), task.getGameSize()));
+						ArrayList<User> users = new ArrayList<User>();
+						users.add(task.getUser());
+						ArrayList<Question> questions = questionsDatabase.getQuestions(int); //TODO Need number of questions for game.
+						newGame(task.getGameName(), new Game(users, questions, task.getGameSize()));
 						break;
 					case "joingame": //Add user to an active game
 						addUser(task.getGameName(), task.getUser());
