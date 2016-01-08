@@ -24,7 +24,7 @@ public class Game {
 	private HashMap<String, User> answers;
 	private List<String> choices;
 	
-	public Game(User users, int gameSize, int numOfQuestions){
+	public Game(ArrayList<User> users, int gameSize, int numOfQuestions){
 		this.phase=-1;
 		this.gameSize=gameSize;
 		this.gameRound=1;
@@ -46,7 +46,7 @@ public class Game {
 	}
 	
 	//Begin game
-	public void beginGame(){
+	public Question beginGame(){
 		phase=0;
 		//first Question is sent to users
 		return currentQuestion;
@@ -86,7 +86,7 @@ public class Game {
 				 while(choicesIterator.hasNext()){
 					 //if answer was chosen, award points to associated user
 					 if(answerPair.getKey().equals(choicesIterator.next()))
-						 IncerementScore(scores.get(answerPair.getValue()), 1);
+						 IncerementScore((User)answerPair.getValue(), 1);
 				 }
 			 }
 			 //send score info and positions to server
