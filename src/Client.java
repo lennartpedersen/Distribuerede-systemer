@@ -6,6 +6,7 @@ import java.io.ObjectOutputStream;
 import java.net.InetAddress;
 import java.net.Socket;
 import java.net.UnknownHostException;
+import java.util.StringTokenizer;
 
 public class Client  {
 	//Fields
@@ -15,6 +16,8 @@ public class Client  {
 	
 	private InetAddress server; //Server address.
 	private int port = 1500; //Server port.
+	private String gameName;
+	private User user = new User();
 
 	//Constructor
 	Client() throws UnknownHostException {
@@ -39,9 +42,9 @@ public class Client  {
 		//success! the client is connected!
 	}
 	
-	void sendMessage(String msg) { //To send a message to the server
+	void put(Object command) { //To send a message to the server
 		try {
-			sOutput.writeObject(msg);
+			sOutput.writeObject(command);
 		} catch (IOException e) {
 			e.printStackTrace();
 		}
@@ -51,14 +54,37 @@ public class Client  {
 		//create the Client
 		Client client = new Client();
 		//start the connection to the Server.
-		client.start();
-		
+		client.start();	
 		//create reader for messages from user
 		BufferedReader scan = new BufferedReader(new InputStreamReader(System.in));
 		//loop forever for messages typed by the user
 		while(true) {
-			String msg = scan.readLine();
-			client.sendMessage(msg);
+			System.out.println("Login - enter username: ");
+			String name = scan.readLine();
+			login(name);
+			System.out.println("Options: \n Join game \n Request game \n Write your choice:" );
+			String option = scan.readLine();
+			System.out.println("Write your arguments: \n (Separate with spaces) \n ");
+			String argument = scan.readLine();
+			StringTokenizer st = new StringTokenizer(argument);
+			String gameName;
+			int gameSize;	
+			while(st.hasMoreTokens()) {
+				if(option.equals("Join game")) {
+					gameName = st.nextToken();
+				} else {
+					gameName = st.nextToken();
+					gameSize = Integer.parseInt(st.nextToken());
+				}
+			}
+			if(option.equals("Join game")) {
+				client.put(joinGame(gameName,user));
+				get("questions"); //Get questions-tuple from server. Wait until questions are received - then print: type answer 
+			}
+			else if(option.equals("Request game")) {
+				client.put(requestGame(gameSize,gameName));
+				client.put(joinGame(gameName,user)); //Automatically join the game you have created.
+			}
 		}
 	}
 
@@ -77,5 +103,16 @@ public class Client  {
 				catch(ClassNotFoundException e2) {}
 			}
 		}
+	}
+	public static Object joinGame(String gameName, User user){
+		return new Command("joinGame",gameName,user);
+	}
+	
+	public static Object requestGame(int gameSize, String gameName) {
+		return new Command("requestGame",gameSize, gameName);
+	}
+	
+	public static void login(String userName) {
+		user.setName(userName);
 	}
 }
