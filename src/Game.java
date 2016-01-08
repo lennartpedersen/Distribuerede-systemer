@@ -17,7 +17,7 @@ public class Game {
 	private int eligableUsers;
 	private int numOfAnswers;
 
-	private ArrayList<User> users;
+	private List<User> users;
 	private List<Question> questionList;
 	private Iterator<Question> iterator;
 	private Question currentQuestion;
@@ -54,7 +54,7 @@ public class Game {
 
 	}
 
-	public void NextPhase() throws Exception {
+	public void nextPhase() throws Exception {
 		this.phase = (phase % 3) + 1;
 
 		switch (phase) {
@@ -109,7 +109,7 @@ public class Game {
 		}
 	}
 
-	public boolean AddAnswer(User user, String answer) throws Exception {
+	public boolean addAnswer(User user, String answer) throws Exception {
 		if (!user.isSpectator()) {
 			this.answers.put(answer, user);
 			this.numOfAnswers++;
@@ -117,7 +117,7 @@ public class Game {
 			// if all non spectator users have send their answers, begin next
 			// phase
 			if (this.numOfAnswers >= this.eligableUsers)
-				NextPhase();
+				nextPhase();
 
 			// if correct answer
 			if (answer.equals(this.currentQuestion.getAnswer())) {
@@ -130,7 +130,7 @@ public class Game {
 		}
 	}
 
-	public void AddChoice(User user, String choice) throws Exception {
+	public void addChoice(User user, String choice) throws Exception {
 		if (!user.isSpectator()) {
 			this.choices.add(choice);
 			// if all users have given their choice, go to the next phase
@@ -138,11 +138,11 @@ public class Game {
 				IncerementScore(user, 2);
 
 			if (this.choices.size() >= this.eligableUsers)
-				NextPhase();
+				nextPhase();
 		}
 	}
 
-	public void AddUser(User user) {
+	public void addUser(User user) {
 		if (this.users.size() < gameSize) {
 			this.users.add(user);
 
@@ -155,7 +155,7 @@ public class Game {
 		}
 	}
 
-	public void IncerementScore(User user, int score) {
+	private void IncerementScore(User user, int score) {
 		scores.put(user, scores.get(user) + score);
 	}
 
