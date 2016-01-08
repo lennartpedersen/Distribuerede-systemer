@@ -104,7 +104,6 @@ public class Game {
 	}
 	
 
-	//OBS! server needs to add function that asks the player for a new question if this returns true
 public boolean AddAnswer(User user, String answer) throws Exception{
 	this.answers.put(answer,user);
 	this.numOfAnswers++;
