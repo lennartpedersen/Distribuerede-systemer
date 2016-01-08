@@ -5,7 +5,7 @@ import java.util.List;
 
 public class Game {
 
-	/*phases(Temp):
+	/*phases:
 	 *0 - Start - send question
 	 *1 - Answering - Answers are recieved and the list is sent to all users for the CHoosing phase 
 	 *2 - Choosing - Answers are chosen and evaluated.
@@ -20,7 +20,7 @@ public class Game {
 	private List<Question> questionList;
 	private Iterator<Question> iterator;
 	private Question currentQuestion;
-	private HashMap<User, Integer> scores.get(; 
+	private HashMap<User, Integer> scores; 
 	private HashMap<String, User> answers;
 	private List<String> choices;
 	
