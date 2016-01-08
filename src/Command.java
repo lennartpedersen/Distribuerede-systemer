@@ -6,6 +6,7 @@ public class Command {
 	private String answer;
 	private User user;
 	private int choice;
+	private boolean startGame;
 	
 	public Command(String command, String gameName, int gameSize) { //Request game
 		this.command = command;
@@ -27,6 +28,15 @@ public class Command {
 	public Command(String command, int choice) { //Choose - valg er bliver givet som en int, 
 		this.command = command;					 //da vi tænker at nummere svarmulighederne så man slipper for at taste 
 		this.choice = choice;				 	 //hele svar ind
+	}
+	
+	public Command(String command) { //Request questions from server
+		this.command = command;
+	}
+	
+	public Command(String command, boolean startGame) { //Request to start game
+		this.command = command;
+		this.startGame = startGame;
 	}
 
 	public String getCommand() {
