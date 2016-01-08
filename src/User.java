@@ -2,10 +2,10 @@
 public class User {
 	private String name;
 	private Game game;
+	private boolean spectator;
 	
-	public User(String name, Game game) {
+	public User(String name) {
 		this.name = name;
-		this.game = game;
 	}
 
 	public String getName() {
@@ -22,5 +22,13 @@ public class User {
 
 	public void setGame(Game game) {
 		this.game = game;
+	}
+
+	public boolean isSpectator() {
+		return spectator;
+	}
+
+	public void setSpectator(boolean spectator) {
+		this.spectator = spectator;
 	}
 }

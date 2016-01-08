@@ -53,10 +53,10 @@ public class QuestionDB {
 			aIn.close();
 		}
 		catch (FileNotFoundException e) {
-			e.printStackTrace();
+			System.out.println(qFile + " or " + aFile + " not found.");
 		} 
 		catch (IOException e) {
-			e.printStackTrace();
+			System.out.println("Unable to read " + qFile + " or " + aFile + ".");
 		}
 		
 		return qaList;

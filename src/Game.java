@@ -162,5 +162,19 @@ public class Game {
 	private boolean isStarted() {
 		return phase >= 0;
 	}
+<<<<<<< HEAD
 
+=======
+	
+
+	
+	public boolean checkAnswer(String correctAnswer, String userAnswer) {
+		String cAnswer = correctAnswer.toLowerCase(),
+			   uAnswer = userAnswer.toLowerCase();
+		
+		// Add additional matching
+		
+		return cAnswer.equals(uAnswer);
+	}
+>>>>>>> origin/helge
 }
