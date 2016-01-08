@@ -59,6 +59,33 @@ public class Server {
 		server.start();
 	}
 	
+	public void newUser(String name) throws Exception {
+		if (name.length() == 0)
+			throw new Exception("The name entered is blank.");
+		if (name.length() > 10)
+			throw new Exception("Name must be 10 characters or less.");
+		if (!alphabeticName(name))
+			throw new Exception("Name must contain alphabetic characters only.");
+		if (nameExists(name))
+			throw new Exception("A user with the entered name already exists.");
+		users.add(new User(name));
+	}
+	
+	public boolean alphabeticName(String name) {
+		for (int i = 0; i < name.length(); i++) {
+			char ch = name.charAt(i);
+			if (!Character.isAlphabetic(ch))
+				return false;
+		} return true;
+	}
+
+	public boolean nameExists(String name) {
+		for (User user : users)
+			if (name.equals(user.getName())) 
+				return true;		
+		return false;
+	}
+	
 	
 	
 	class ClientThread extends Thread { //Threads used to perform tasks for individual clients

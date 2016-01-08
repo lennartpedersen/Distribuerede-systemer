@@ -147,5 +147,14 @@ public void AddUser(User user){
 		return phase >= 0;
 	}
 	
+
 	
+	public boolean checkAnswer(String correctAnswer, String userAnswer) {
+		String cAnswer = correctAnswer.toLowerCase(),
+			   uAnswer = userAnswer.toLowerCase();
+		
+		// Add additional matching
+		
+		return cAnswer.equals(uAnswer);
+	}
 }
