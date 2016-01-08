@@ -8,6 +8,8 @@ import java.net.Socket;
 import java.net.UnknownHostException;
 import java.util.StringTokenizer;
 
+import javax.xml.ws.handler.MessageContext.Scope;
+
 public class Client  {
 	//Fields
 	private ObjectInputStream sInput; //Datastream for receiving data from socket
@@ -18,6 +20,7 @@ public class Client  {
 	private int port = 1500; //Server port.
 	private String gameName;
 	private User user = new User();
+	private boolean questionsReceived, scoresReceived = false;
 
 	//Constructor
 	Client() throws UnknownHostException {
@@ -59,12 +62,14 @@ public class Client  {
 		BufferedReader scan = new BufferedReader(new InputStreamReader(System.in));
 		//loop forever for messages typed by the user
 		while(true) {
-			System.out.println("Login - enter username: ");
-			String name = scan.readLine();
-			login(name);
+			startLoginPhase();
 			System.out.println("Options: \n Join game \n Request game \n Write your choice:" );
 			String option = scan.readLine();
-			System.out.println("Write your arguments: \n (Separate with spaces) \n ");
+			while(option.equals("Join game") == false && option.equals("Request game") == false) {
+				System.out.println("Incorrect input. Please try again");
+				option = scan.readLine();
+			}
+			System.out.println("Write your arguments(GameName Gamesize) \n (Separate with spaces): \n ");
 			String argument = scan.readLine();
 			StringTokenizer st = new StringTokenizer(argument);
 			String gameName;
@@ -79,23 +84,78 @@ public class Client  {
 			}
 			if(option.equals("Join game")) {
 				client.put(joinGame(gameName,user));
-				get("questions"); //Get questions-tuple from server. Wait until questions are received - then print: type answer 
+				 
 			}
 			else if(option.equals("Request game")) {
 				client.put(requestGame(gameSize,gameName));
 				client.put(joinGame(gameName,user)); //Automatically join the game you have created.
 			}
+			
+			
+			//Players can put a start-game request - if all players have requested this then the game start.
+			System.out.println("When you are ready to begin the game please enter: Start");
+			String start = scan.readLine();
+			while(start.equals("Start") == false) {
+				System.out.println("Input not correct. To begin game enter: Start");
+				start = scan.readLine();
+			} 
+			client.put(startGameRequest(true));	
+			for(int i = 0; i < gameSize; i++) {		
+				//Get questions-tuple from server. Wait until questions are received - then prints: type answer
+				client.get(getQuestions("Questions")); 
+				while(!questionsReceived) {
+					//wait until questions are received
+				}
+				questionsReceived = false;
+				System.out.println("Type the number of the answer you think is correct");
+				//Print questions
+				
+				
+				int choice = Integer.parseInt(scan.readLine());
+				client.put(choice); //Sends choice of answer to server. 
+				client.get("scores"); //Receives scores as an array. Needs to output scores to the user.
+				while(!scoresReceived) {
+					//wait until questions are received
+				}
+				scoresReceived = false;
+				
+				
+				//new round starts - loop to getQuestions in for loop of length = number of Q's
+				System.out.println("New round starts");
+			}
+			System.out.println("Game over."); //Display final scores?
+		}
+	}
+	
+	public static void startLoginPhase() {
+		BufferedReader scan = new BufferedReader(new InputStreamReader(System.in));
+		System.out.println("Login - enter username: ");
+		String name = scan.readLine();
+		login(name); //TODO Check if username is already taken
+	}
+
+	public void get(Object command) { //For get-commands: get questions, get answers.
+		try {
+			sOutput.writeObject(command);
+		} catch (IOException e) {
+			e.printStackTrace();
 		}
 	}
 
-	
-	
+
 	class ListenFromServer extends Thread { //ListenServer is a Thread that listens for messages from the server and displays them real-time in the console as they are received.
 		public void run() {
 			while(true) {
 				try {
-					String msg = (String) sInput.readObject();
-					System.out.println(msg);
+					Command task = (Command) sInput.readObject();
+					//Analyze object and do task.
+					if(task.getCommand().equals("Questions")) {
+						questionsReceived = true;
+						printQuestions();
+					} else if(task.getCommand().equals("scores")) {
+						scoresReceived = true;
+						printScores();
+					}
 				}
 				catch(IOException e) {
 					e.printStackTrace();
@@ -103,16 +163,39 @@ public class Client  {
 				catch(ClassNotFoundException e2) {}
 			}
 		}
+
+		private void printQuestions() {
+		// TODO Print Questions received from server
+		
+	}
+
+		private void printScores() {
+			// TODO Print array with scores received from game.
+			
+		}
 	}
 	public static Object joinGame(String gameName, User user){
 		return new Command("joinGame",gameName,user);
 	}
 	
 	public static Object requestGame(int gameSize, String gameName) {
-		return new Command("requestGame",gameSize, gameName);
+		return new Command("requestGame",gameName, gameSize);
 	}
 	
 	public static void login(String userName) {
 		user.setName(userName);
 	}
+	
+	public static Object getQuestions(String string) {
+		return new Command(string);
+	}
+	
+	public static Object startGameRequest(boolean b) {
+		return new Command("startGameRequest",true);
+	}
+	
+	public static Object choiseOfAnswer(int choice) {
+		return new Command("choiceOfAnswer", choice);
+	}
+
 }
