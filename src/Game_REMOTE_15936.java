@@ -18,13 +18,12 @@ public class Game {
 	private int numOfAnswers;
 
 	private List<User> users;
-	private List<User> usersRequestingStart;
 	private List<Question> questionList;
 	private Iterator<Question> iterator;
 	private Question currentQuestion;
 	private HashMap<User, Integer> scores;
 	private HashMap<String, User> answers;
-	private HashMap<User, String> choices;
+	private List<String> choices;
 
 	public Game(ArrayList<User> users, ArrayList<Question> QuestionDB, int gameSize) {
 		this.phase = -1;
@@ -33,7 +32,6 @@ public class Game {
 		this.eligableUsers = users.size();
 		this.numOfAnswers = 0;
 		this.users = users;
-		this.usersRequestingStart = new ArrayList<User>();
 
 		this.questionList = QuestionDB;
 		this.currentQuestion = questionList.get(0);
@@ -45,7 +43,7 @@ public class Game {
 		}
 
 		answers = new HashMap<>();
-		choices = new HashMap<>();
+		choices = new ArrayList<>();
 	}
 
 	// Begin game
@@ -85,14 +83,13 @@ public class Game {
 		// Info on scores and positioning needs to be send to all users.
 		case 2:
 			Iterator<Entry<String, User>> answersIterator = answers.entrySet().iterator();
-			Iterator<Entry<User, String>> choicesIterator = choices.entrySet().iterator();
+			Iterator<String> choicesIterator = choices.iterator();
 			while (answersIterator.hasNext()) {
-				HashMap.Entry<String, User> answersPair = (Entry<String, User>) answersIterator.next();
-				HashMap.Entry<User, String> choicesPair = (Entry<User, String>) choicesIterator.next();
+				HashMap.Entry<String, User> answerPair = (Entry<String, User>) answersIterator.next();
 				while (choicesIterator.hasNext()) {
 					// if answer was chosen, award points to associated user
-					if (answersPair.getKey().equals(choicesPair.getValue()))
-						incrementScore((User) answersPair.getValue(), 1);
+					if (answerPair.getKey().equals(choicesIterator.next()))
+						IncerementScore((User) answerPair.getValue(), 1);
 				}
 			}
 			// send score info and positions to server
@@ -124,8 +121,8 @@ public class Game {
 				nextPhase();
 
 			// if correct answer
-			if (answerCheck(answer)) {
-				incrementScore(user, 3);
+			if (checkAnswer(answer)) {
+				IncerementScore(user, 3);
 				// user needs to give another answer
 				return true;
 			}
@@ -135,14 +132,12 @@ public class Game {
 		return false;
 	}
 
-	// make work
 	public void addChoice(User user, String choice) throws Exception {
 		if (!user.isSpectator()) {
-			this.choices.put(user, choice);
+			this.choices.add(choice);
 			// if all users have given their choice, go to the next phase
-
-			if (choice.equals(currentQuestion.getAnswer()))
-				incrementScore(user, 2);
+			if (choice.equals(getCurrentQuestion().getAnswer()))
+				IncerementScore(user, 2);
 
 			if (this.choices.size() >= this.eligableUsers)
 				nextPhase();
@@ -162,54 +157,21 @@ public class Game {
 		}
 	}
 
-	public void addRequest(User user) {
-		this.usersRequestingStart.add(user);
-	}
-
-	private void incrementScore(User user, int score) {
+	private void IncerementScore(User user, int score) {
 		scores.put(user, scores.get(user) + score);
 	}
 
 	private boolean isStarted() {
 		return phase >= 0;
 	}
-
-	public boolean isGameReady() {
-		return (this.usersRequestingStart.size() >= this.users.size());
-	}
-
-	public boolean answerCheck(String userAnswer) {
-		String uAnswer = userAnswer.toLowerCase(), cAnswer = currentQuestion.getAnswer().toLowerCase();
-
+	
+	public boolean checkAnswer(String userAnswer) {
+		String uAnswer = userAnswer.toLowerCase(),
+			   cAnswer = currentQuestion.getAnswer().toLowerCase();
+		
 		// Add additional matching
-
+		
 		return cAnswer.equals(uAnswer);
-	}
-
-	public boolean phaseCheck(int phase) {
-		return (getPhase() == phase);
-	}
-
-	private int getPhase() {
-		return this.phase;
-	}
-
-	public List<String> getListOfAnswers() {
-		List<String> listOfAnswers = new ArrayList<String>();
-		Iterator<Entry<String, User>> answersIterator = answers.entrySet().iterator();
-		while (answersIterator.hasNext()) {
-			HashMap.Entry<String, User> answerPair = (Entry<String, User>) answersIterator.next();
-			listOfAnswers.add(answerPair.getKey());
-		}
-		return listOfAnswers;
-	}
-
-	public HashMap<User, String> getListOfChoices() {
-		return getChoicesMap();
-	}
-
-	private HashMap<User, String> getChoicesMap() {
-		return this.choices;
 	}
 
 	public Question getCurrentQuestion() {

@@ -52,7 +52,7 @@ public class Game {
 	public Question beginGame() {
 		phase = 0;
 		// first Question is sent to users
-		return getCurrentQuestion();
+		return currentQuestion;
 
 	}
 
@@ -63,8 +63,7 @@ public class Game {
 		// Phase 0 - Next round, Set next Question as current question, reset
 		case 0:
 			if (iterator.hasNext()) {
-				currentQuestion = getCurrentQuestion();
-				currentQuestion = iterator.next();
+				this.currentQuestion = iterator.next();
 				this.numOfAnswers = 0;
 				answers.clear();
 				choices.clear();
@@ -140,7 +139,6 @@ public class Game {
 		if (!user.isSpectator()) {
 			this.choices.put(user, choice);
 			// if all users have given their choice, go to the next phase
-
 			if (choice.equals(currentQuestion.getAnswer()))
 				incrementScore(user, 2);
 
@@ -210,9 +208,5 @@ public class Game {
 
 	private HashMap<User, String> getChoicesMap() {
 		return this.choices;
-	}
-
-	public Question getCurrentQuestion() {
-		return this.currentQuestion;
 	}
 }
