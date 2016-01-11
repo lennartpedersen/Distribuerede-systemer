@@ -1,4 +1,5 @@
-import java.util.ArrayList;
+import java.util.HashMap;
+import java.util.List;
 
 public class Tuple {
 	private String command;
@@ -8,13 +9,12 @@ public class Tuple {
 	private String answer;
 	private User user;
 	private int choice;
+	private List<String> choices;
 	private boolean startGame;
-	/*
-	public Command(String command, String gameName, int gameSize) { //Request game
-		this.command = command;
-		this.gameSize = gameSize;
-		this.gameName = gameName;
-	}*/
+	private int phase;
+	private HashMap<User, Integer> scores;
+	private String login;
+	private boolean isLoggedIn;
 	
 	public Tuple(Object fields[]) {
 		/*
@@ -27,40 +27,23 @@ public class Tuple {
 		 * 5 - User
 		 * 6 - Choice
 		 * 7 - Start Game bool
+		 * 8 - phase
+		 * 9 - Scores (HashMap<User, Integer>)
+		 * 10 - Login (String)
+		 * 11 - isLoggedIn (BOOL)
 		 */
 		this.command = (String) fields[0];
 		this.gameName = (String) fields[1];
 		this.gameSize = Integer.parseInt((String) fields[2]);
-		this.question = (String) fields[3];
+		this.question = ((String) fields[3]);
 		this.answer = (String) fields[4];
 		this.user = (User) fields[5];
 		this.choice = (int) fields[6];
 		this.startGame = (boolean) fields[7];
-	}
-	
-	public Tuple(String command, String gameName, User user) { //Join game
-		this.command = command;
-		this.gameName = gameName;
-		this.user = user;
-	}
-	
-	public Tuple(String command, String answer) { //Answer
-		this.command = command;
-		this.answer = answer;
-	}
-	
-	public Tuple(String command, int choice) { //Choose - valg er bliver givet som en int, 
-		this.command = command;					 //da vi tænker at nummere svarmulighederne så man slipper for at taste 
-		this.choice = choice;				 	 //hele svar ind
-	}
-	
-	public Tuple(String command) { //Request questions from server
-		this.command = command;
-	}
-	
-	public Tuple(String command, boolean startGame) { //Request to start game
-		this.command = command;
-		this.startGame = startGame;
+		this.phase = (int) fields[8];
+		this.scores = (HashMap<User, Integer>) fields[9]; 
+		this.login = (String) fields[10];
+		this.isLoggedIn = (boolean) fields[11];
 	}
 
 	public String getCommand() {
@@ -86,5 +69,34 @@ public class Tuple {
 	public int getChoice() {
 		return choice;
 	}
+
+	public List<String> getChoices() {
+		return choices;
+	}
+
+	public boolean getStartGame() {
+		return startGame;
+	}
+
+	public int getPhase() {
+		return phase;
+	}
+
+	public HashMap<User, Integer> getScores() {
+		return scores;
+	}
+
+	public String getLogin() {
+		return login;
+	}
+
+	public boolean getIsLoggedIn() {
+		return isLoggedIn;
+	}
+
+	public String getQuestion() {
+		return question;
+	}
+
 	
 }
