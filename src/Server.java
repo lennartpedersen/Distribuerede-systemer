@@ -160,14 +160,14 @@ public class Server {
 					case "joingame": //Add user to an active game
 						addUser(task.getGameName(), task.getUser());
 						break;
+					case "startGameRequest":
+						requestStartGame();
+						break;
+					case "choiceOfAnswer":
+						chooseAnswer();
+						break;
 					//Add new command here.
 					/*
-					case "":
-						
-						break;
-					case "":
-						
-						break;
 					case "":
 						
 						break;
