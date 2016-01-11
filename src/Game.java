@@ -26,7 +26,7 @@ public class Game {
 	private HashMap<String, User> answers;
 	private HashMap<User, String> choices;
 
-	public Game(ArrayList<User> users, ArrayList<Question> QuestionDB, int gameSize) {
+	public Game(ArrayList<User> users, List<Question> questions, int gameSize) {
 		this.phase = -1;
 		this.gameSize = gameSize;
 		this.gameRound = 1;
@@ -35,7 +35,7 @@ public class Game {
 		this.users = users;
 		this.usersRequestingStart = new ArrayList<User>();
 
-		this.questionList = QuestionDB;
+		this.questionList = questions;
 		this.currentQuestion = questionList.get(0);
 		iterator = questionList.iterator();
 

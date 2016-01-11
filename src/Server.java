@@ -7,6 +7,7 @@ import java.net.Socket;
 import java.net.SocketException;
 import java.util.ArrayList;
 import java.util.HashMap;
+import java.util.List;
 
 public class Server {
 	
@@ -65,7 +66,7 @@ public class Server {
 		server.start();
 	}
 	
-	public void newUser(String name) throws Exception {
+	public boolean isUserAllowed(String name) throws Exception { //Checks if entered name is allowed. Client-side?
 		if (name.length() == 0)
 			throw new Exception("The name entered is blank.");
 		if (name.length() > 10)
@@ -74,7 +75,15 @@ public class Server {
 			throw new Exception("Name must contain alphabetic characters only.");
 		if (nameExists(name))
 			throw new Exception("A user with the entered name already exists.");
-		clientList.add(new User(name));
+		return true;
+	}
+	
+	public void addUser(User user){ //Add user as an active client.
+		clientList.add(user);
+	}
+	
+	public void removeUser(User user) { //Removes user from clientlist. Quit game. Username is freed.
+		clientList.remove(user);
 	}
 	
 	public boolean alphabeticName(String name) {
@@ -92,14 +101,20 @@ public class Server {
 		return false;
 	}
 	
+	public boolean gameExists(String name) {
+		return gameList.containsKey(name);
+	}
+	
 	//Methods for managing games
-	public void newGame(String name, Game game){ //Add a game to collection.
-		//TODO Check for duplicates before putting. Respond to duplicates.
+	public void newGame(String name, Game game) throws Exception{ //Add a game to collection.
+		if (gameExists(name))
+			throw new Exception("Game with that name already exists.");
 		gameList.put(name, game);
 	}
 	
-	public void addUser(String gamename, User user){ //Add new user/player to game.
-		//TODO Check if game exists, respond to client that requested the operation.
+	public void addUserToGame(String gamename, User user) throws Exception{ //Add new user/player to game.
+		if (!gameExists(gamename))
+			throw new Exception("Game with that name doesn't exist.");
 		Game game = gameList.get(gamename);
 		//Add user to the game
 		game.addUser(user);
@@ -108,18 +123,34 @@ public class Server {
 		clientList.add(user);
 	}
 	
-	public void startGame(String gamename){ //Start a specified game.
-		//TODO Check if game exists, respond.
+	public void startGame(String gamename) throws Exception{ //Start a specified game.
+		if (!gameExists(gamename))
+			throw new Exception("Game with that name doesn't exist.");
 		gameList.get(gamename).beginGame();
 	}
 	
-	public void getQuestion(String gamename){ //Return current question for specified game.
-		//TODO
-		gameList.get(gamename).getCurrentQuestion();
+	public Question getQuestion(String gamename){ //Return current question for specified game.
+		return gameList.get(gamename).getCurrentQuestion();
 	}
 	
 	public void evaluateChoices(){ //No idea what this does...
 		//TODO
+	}
+	
+	public boolean requestStartGame(User user) throws Exception { //Request the start of the game tied to given user.
+		Game game = user.getGame();
+		if (game == null)
+			throw new Exception("You must join a game before you can be ready.");
+		game.addRequest(user);
+		return game.isGameReady();
+	}
+	
+	public void chooseAnswer(User user, int choice) throws Exception { //User chooses an answer they believe is the correct answer.
+		Game game = user.getGame();
+		if (game == null)
+			throw new Exception("You must join a game before you can be choose an answer.");
+		String answer = game.getListOfAnswers().get(choice);
+		game.addChoice(user, answer);
 	}
 	
 	class ClientThread extends Thread { //Threads used to perform tasks for individual clients
@@ -127,6 +158,7 @@ public class Server {
 		Socket socket; //the client's connection
 		ObjectInputStream sInput; //input from client
 		ObjectOutputStream sOutput; //output to client
+		User user;
 		Command task; //current task
 
 		//Constructor
@@ -149,33 +181,43 @@ public class Server {
 			while (readData()){ //Read Command object from inputstream. Decode command only if data reading is successful.
 				//Decode Commmand object and perform task.
 				String command = task.getCommand();
-				switch (command){ //Decode command switch
-					case "requestgame": //Creates a new game
-						//TODO Ping Pong with Client in case of error.
-						ArrayList<User> users = new ArrayList<User>();
-						users.add(task.getUser());
-						ArrayList<Question> questions = questionsDatabase.getQuestions(int); //TODO Need number of questions for game.
-						newGame(task.getGameName(), new Game(users, questions, task.getGameSize()));
-						break;
-					case "joingame": //Add user to an active game
-						addUser(task.getGameName(), task.getUser());
-						break;
-					case "startGameRequest":
-						requestStartGame();
-						break;
-					case "choiceOfAnswer":
-						chooseAnswer();
-						break;
-					//Add new command here.
-					/*
-					case "":
-						
-						break;
-					*/
-					default:
-						System.err.println("You are an idiot Thomas. You forgot a command! Unknown Command. Closed connection.");
-						close();
-						break;
+				try {
+					switch (command){ //Decode command switch
+						case "login":
+							isUserAllowed(task.getUser().getName()); //Check if name already exists. Throws exception currently, why it is not in an if statement.
+							clientList.add(user);
+							user = task.getUser();
+							break;
+						case "requestgame": //Creates a new game
+							ArrayList<User> users = new ArrayList<User>();
+							users.add(task.getUser());
+							List<Question> questions = questionsDatabase.getQuestions(task.getGameLength());
+							newGame(task.getGameName(), new Game(users, questions, task.getGameSize()));
+							break;
+						case "joingame": //Add user to an active game
+							addUserToGame(task.getGameName(), task.getUser());
+							break;
+						case "startGameRequest":
+							if (requestStartGame(user)){
+								sendData(new Command("questions", user.getGame().getCurrentQuestion()));
+							}
+							break;
+						case "choice":
+							chooseAnswer(user, task.getChoice());
+							break;
+							//Add new command here.
+							/*
+						case "":
+							
+							break;
+							 */
+						default:
+							System.err.println("You are an idiot Thomas. You forgot a command! Unknown Command. Closed connection.");
+							close();
+							break;
+					}
+				}catch (Exception e){
+					sendData(new Command("Error", e));
 				}
 			}
 			remove(this); //Removes this ClientThread from Server's threadlist.
@@ -217,8 +259,8 @@ public class Server {
 			try {
 				if (socket != null) socket.close();
 			} catch (IOException e) {}
+			removeUser(user);
 		}
 	}
-
 }
 

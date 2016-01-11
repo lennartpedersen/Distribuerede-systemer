@@ -5,13 +5,17 @@ public class Command {
 	private String gameName;
 	private String answer;
 	private User user;
+	private Question question;
 	private int choice;
 	private boolean startGame;
+	private int gameLength;
+	private Exception exception;
 	
-	public Command(String command, String gameName, int gameSize) { //Request game
+	public Command(String command, String gameName, int gameSize, int gameLength) { //Request game
 		this.command = command;
 		this.gameSize = gameSize;
 		this.gameName = gameName;
+		this.gameLength = gameLength;
 	}
 	
 	public Command(String command, String gameName, User user) { //Join game
@@ -39,6 +43,16 @@ public class Command {
 		this.startGame = startGame;
 	}
 
+	public Command(String command, Question currentQuestion) { //Send question.
+		this.command = command;
+		this.question = currentQuestion;
+	}
+
+	public Command(String command, Exception exception) { //Error exception thrown.
+		this.command = command;
+		this.exception = exception;
+	}
+
 	public String getCommand() {
 		return command;
 	}
@@ -61,6 +75,18 @@ public class Command {
 
 	public int getChoice() {
 		return choice;
+	}
+
+	public int getGameLength() {
+		return gameLength;
+	}
+
+	public Question getQuestion() {
+		return question;
+	}
+
+	public Exception getException() {
+		return exception;
 	}
 	
 }
