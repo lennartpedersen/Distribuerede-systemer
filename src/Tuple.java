@@ -1,102 +1,84 @@
-import java.util.HashMap;
-import java.util.List;
+import java.io.Serializable;
+import java.util.ArrayList;
 
-public class Tuple {
-	private String command;
-	private int gameSize;
-	private String gameName;
-	private String question;
-	private String answer;
-	private User user;
-	private int choice;
-	private List<String> choices;
-	private boolean startGame;
-	private int phase;
-	private HashMap<User, Integer> scores;
-	private String login;
-	private boolean isLoggedIn;
+public class Tuple implements Serializable {
+	/*
+	 * Serial number, allows client and server to recognize this object as the same class when sending and receiving data. Do not remove.
+	 */
+	private static final long serialVersionUID = -5751716628966339791L;
 	
-	public Tuple(Object fields[]) {
-		/*
-		 * Argumenter fordeles således:
-		 * 0 - Command string
-		 * 1 - Game Name
-		 * 2 - Game Size
-		 * 3 - Question
-		 * 4 - Answer
-		 * 5 - User
-		 * 6 - Choice
-		 * 7 - Start Game bool
-		 * 8 - phase
-		 * 9 - Scores (HashMap<User, Integer>)
-		 * 10 - Login (String)
-		 * 11 - isLoggedIn (BOOL)
-		 */
-		this.command = (String) fields[0];
-		this.gameName = (String) fields[1];
-		this.gameSize = Integer.parseInt((String) fields[2]);
-		this.question = ((String) fields[3]);
-		this.answer = (String) fields[4];
-		this.user = (User) fields[5];
-		this.choice = (int) fields[6];
-		this.startGame = (boolean) fields[7];
-		this.phase = (int) fields[8];
-		this.scores = (HashMap<User, Integer>) fields[9]; 
-		this.login = (String) fields[10];
-		this.isLoggedIn = (boolean) fields[11];
+	/* 
+	 * This should be used to request operations from client to server.
+	 * Can be used to respond to the requested operation from server to client when successful or unsuccessful.
+	 * When an operation is successful, server responds with a tuple object of the same operation type as requested (To a successful login operation, Server responds with a tuple with the LOGIN constant as command)
+	 * and any requested or required data attached to the data field. With a failed operation the server responds with a tuple using the ERROR command and the attached exception.
+	 * 
+	 * Operations:
+	 * 0 ERROR: Used to indicate that an error has occurred with latest operation. Only used by server as a responds to failed operations.
+	 * Attached Object/s: Exception 'the thrown exception'.
+	 * 
+	 * 1 LOGIN: Used to request a login as an active client with a username. User is remembered by server and is required for all other operations.
+	 * Attached Object/s: User 'the new user'.
+	 * 
+	 * 2 REQUESTNEWGAME: Used to request a new game to be created.
+	 * Attached Object/s: String 'the requested game name', Integer 'the max amount of players', Integer 'the number of rounds'.
+	 * 
+	 * 3 JOINGAME: Used to request to join an already created game as the currently logged in user.
+	 * Attached Object/s: String 'the name of the game to join'.
+	 * 
+	 * 4 ANSWER: Used to send in an answer to the current question of the active game.
+	 * Attached Object/s: String 'the given answer'.
+	 * 
+	 * 5 CHOICE: Used to send in an choose of what the user believes to be the correct answer in the current game.
+	 * Attached Object/s: Integer 'the number of the chosen answer as index in the given answer list'.
+	 * 
+	 * 6 QUESTION: Used by the server to send out the current question for the active game. Done when the game starts and every new round.
+	 * Attached Object/s: Question 'the current question'
+	 * 
+	 * 7 STARTGAMEREQUEST: Used to request or cancel a game start from the client.
+	 * Attached Object/s: Boolean 'if user is ready for the game to start'.
+	 * 
+	 * 
+	 * Do we need more operations? We probably do.
+	 */
+	public static final int 
+			ERROR = 0,
+			LOGIN = 1,
+			REQUESTNEWGAME = 2,
+			JOINGAME = 3,
+			ANSWER = 4,
+			CHOICE = 5,
+			QUESTION = 6,
+			STARTGAMEREQUEST = 7;
+
+	private int command;
+	private ArrayList<Object> data;
+	
+	
+	public Tuple(int command) {
+		this.command = command;
 	}
 
-	public String getCommand() {
+	public Object get(int index) {
+		return this.data.get(index);
+	}
+
+	public void put(Object data) {
+		if (data == null)
+			data = new ArrayList<Object>();
+		this.data.add(data);
+	}
+
+	public void put(int index, Object data) {
+		this.data.add(index, data);
+	}
+
+	public int getCommand() {
 		return command;
 	}
 
-	public int getGameSize() {
-		return gameSize;
+	public void setCommand(int command) {
+		this.command = command;
 	}
-
-	public String getGameName() {
-		return gameName;
-	}
-
-	public String getAnswer() {
-		return answer;
-	}
-
-	public User getUser() {
-		return user;
-	}
-
-	public int getChoice() {
-		return choice;
-	}
-
-	public List<String> getChoices() {
-		return choices;
-	}
-
-	public boolean getStartGame() {
-		return startGame;
-	}
-
-	public int getPhase() {
-		return phase;
-	}
-
-	public HashMap<User, Integer> getScores() {
-		return scores;
-	}
-
-	public String getLogin() {
-		return login;
-	}
-
-	public boolean getIsLoggedIn() {
-		return isLoggedIn;
-	}
-
-	public String getQuestion() {
-		return question;
-	}
-
 	
 }

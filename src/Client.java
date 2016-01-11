@@ -50,17 +50,19 @@ public class Client  {
 					System.out.println("Incorrect input. Please try again");
 					option = scan.readLine();
 				}
-				System.out.println("Write your arguments (GameName Gamesize) \n (Separate with spaces): \n ");
+				System.out.println("Write your arguments (GameName Gamesize GameLength) \n (Separate with spaces): \n ");
 				String argument = scan.readLine();
 				StringTokenizer st = new StringTokenizer(argument);
 				String gameName = "";
 				int gameSize = 0;
+				int gameLength = 0;
 				while(st.hasMoreTokens()) {
 					if(option.equals("Join game")) {
 						gameName = st.nextToken();
 					} else {
 						gameName = st.nextToken();
 						gameSize = Integer.parseInt(st.nextToken());
+						gameLength = Integer.parseInt(st.nextToken());
 					}
 				}
 				if(option.equals("Join game")) {
@@ -68,7 +70,7 @@ public class Client  {
 					 
 				}
 				else if(option.equals("Request game")) {
-					client.put(requestGame(gameSize,gameName));
+					client.put(requestGame(gameSize,gameName,gameLength));
 					client.put(joinGame(gameName,user)); //Automatically join the game you have created.
 				}
 				
@@ -165,7 +167,7 @@ public class Client  {
 					Command tuple = (Command) sInput.readObject();
 					//Analyze object and do task.
 					
-					switch (tuple.get(0)) {
+					switch (tuple.getCommand()) {
 					case "login":
 						if (tuple.get(1))
 							user = new User(tuple.get(2));
@@ -204,8 +206,8 @@ public class Client  {
 		return new Command("joinGame",gameName,user);
 	}
 	
-	public Object requestGame(int gameSize, String gameName) {
-		return new Command("requestGame",gameName, gameSize);
+	public Object requestGame(int gameSize, String gameName, int gameLength) {
+		return new Command("requestGame",gameName, gameSize, gameLength);
 	}
 	
 	public Object login(String userName) {
