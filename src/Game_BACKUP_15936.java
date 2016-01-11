@@ -140,9 +140,13 @@ public class Game {
 		if (!user.isSpectator()) {
 			this.choices.put(user, choice);
 			// if all users have given their choice, go to the next phase
-
+<<<<<<< HEAD
 			if (choice.equals(currentQuestion.getAnswer()))
 				incrementScore(user, 2);
+=======
+			if (choice.equals(getCurrentQuestion().getAnswer()))
+				IncerementScore(user, 2);
+>>>>>>> origin
 
 			if (this.choices.size() >= this.eligableUsers)
 				nextPhase();
@@ -186,6 +190,7 @@ public class Game {
 		return cAnswer.equals(uAnswer);
 	}
 
+<<<<<<< HEAD
 	public boolean phaseCheck(int phase) {
 		return (getPhase() == phase);
 	}
@@ -210,9 +215,9 @@ public class Game {
 
 	private HashMap<User, String> getChoicesMap() {
 		return this.choices;
-	}
-
+=======
 	public Question getCurrentQuestion() {
 		return this.currentQuestion;
+>>>>>>> origin
 	}
 }
