@@ -50,7 +50,7 @@ public class Game {
 	public Question beginGame() {
 		phase = 0;
 		// first Question is sent to users
-		return currentQuestion;
+		return getCurrentQuestion();
 
 	}
 
@@ -61,7 +61,8 @@ public class Game {
 		// Phase 0 - Next round, Set next Question as current question, reset
 		case 0:
 			if (iterator.hasNext()) {
-				this.currentQuestion = iterator.next();
+				currentQuestion = getCurrentQuestion();
+				currentQuestion = iterator.next();
 				this.numOfAnswers = 0;
 				answers.clear();
 				choices.clear();
@@ -135,7 +136,7 @@ public class Game {
 		if (!user.isSpectator()) {
 			this.choices.add(choice);
 			// if all users have given their choice, go to the next phase
-			if (choice.equals(currentQuestion.getAnswer()))
+			if (choice.equals(getCurrentQuestion().getAnswer()))
 				IncerementScore(user, 2);
 
 			if (this.choices.size() >= this.eligableUsers)
@@ -171,5 +172,9 @@ public class Game {
 		// Add additional matching
 		
 		return cAnswer.equals(uAnswer);
+	}
+
+	public Question getCurrentQuestion() {
+		return this.currentQuestion;
 	}
 }
