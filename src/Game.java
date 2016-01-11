@@ -120,7 +120,7 @@ public class Game {
 				nextPhase();
 
 			// if correct answer
-			if (checkAnswer(answer)answer.equals(this.currentQuestion.getAnswer())) {
+			if (checkAnswer(answer)) {
 				IncerementScore(user, 3);
 				// user needs to give another answer
 				return true;
@@ -164,9 +164,9 @@ public class Game {
 		return phase >= 0;
 	}
 	
-	public boolean checkAnswer(String correctAnswer) {
-		String cAnswer = correctAnswer.toLowerCase(),
-			   uAnswer = currentQuestion.getAnswer().toLowerCase();
+	public boolean checkAnswer(String userAnswer) {
+		String uAnswer = userAnswer.toLowerCase(),
+			   cAnswer = currentQuestion.getAnswer().toLowerCase();
 		
 		// Add additional matching
 		
