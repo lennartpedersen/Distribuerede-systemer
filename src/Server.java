@@ -141,7 +141,7 @@ public class Server {
 		game.addChoice(user, answer);
 	}
 	
-	public void sendToAll(List<User> list, Command data){ //Send the given data to all users on the given list.
+	public void sendToAll(List<User> list, Tuple data){ //Send the given data to all users on the given list.
 		Iterator<User> iterator = list.iterator();
 		while(iterator.hasNext()){
 			ClientThread thread = clientList.get(iterator.next());
