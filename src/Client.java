@@ -115,6 +115,7 @@ public class Client  {
 				System.out.println("Write the number of rounds:");
 				gameLength = getInteger();
 				client.put(requestNewGame(gameName, gameSize, gameLength));
+				listenFromServer();
 			}
 			
 			client.put(joinGame(gameName)); 
