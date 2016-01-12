@@ -18,9 +18,8 @@ public class Client  {
 	
 	private InetAddress server; //Server address.
 	private int port = 1500; //Server port.
-	private User user;
 	private static Client client;
-	private boolean gameStarted = false;
+	private boolean gameStarted = true;
 	private BufferedReader scan;
 
 	//Constructor
@@ -29,17 +28,13 @@ public class Client  {
 	}
 	
 	//Methods
-	public void start() {
+	private void start() {
 		//try to connect to the server.
 		try {
 			socket = new Socket(server, port);
 			// creating data streams to receive and send data.
 			sInput  = new ObjectInputStream(socket.getInputStream());
 			sOutput = new ObjectOutputStream(socket.getOutputStream());
-
-			//create the Thread to listen for messages from the server 
-			new ListenFromServer().start();
-			//success! the client is connected!
 			
 			//create reader for messages from user
 			scan = new BufferedReader(new InputStreamReader(System.in));
@@ -49,14 +44,10 @@ public class Client  {
 				
 				optionPhase();
 				
-				client.put(requestStartGame());
-				
-				// Sets gameStarted to true when all players are ready
-				client.read(phase());
-				
 				while (gameStarted) {
 					// Get question from server
-					client.read(question());
+					//client.read(question());
+					listenFromServer();
 
 					// Answer question
 					// System.out.println("Enter answer:"); send from server pls
@@ -64,26 +55,40 @@ public class Client  {
 					client.put(answer(answer));
 
 					// Get choices from server
-					client.read(choices());
+					//client.read(choices());
+					listenFromServer();
 
 					// Pick choice
 					// System.out.println("Choose an answer by its index:");
 					// send from server pls
-					answer = scan.readLine();
-					client.put(choose(Integer.parseInt(answer)));
+					int choice = getInteger();
+					client.put(choose(choice));
 
 					// If game is done, set gameStarted to false
-					client.read(phase());
+					//client.read(phase());
+					listenFromServer();
 
 				}
 				
 				client.read(scores());
+				listenFromServer();
 				
-				//System.out.println("Game over."); //Display final scores?
 			}
 			
 		} catch (IOException e) {
 			e.printStackTrace();
+		}
+	}
+	
+	private void startLoginPhase() {
+		System.out.println("Login - enter username: ");
+		String name;
+		try {
+			name = scan.readLine();
+			client.put(login(name));
+			listenFromServer();
+		} catch (IOException e) {
+			System.out.println("Error scanning line.");
 		}
 	}
 	
@@ -112,7 +117,7 @@ public class Client  {
 				client.put(requestNewGame(gameName, gameSize, gameLength));
 			}
 			
-			client.put(joinGame(gameName, user)); 
+			client.put(joinGame(gameName)); 
 
 			// Players can put a start-game request - if all players have
 			// requested this then the game starts.
@@ -122,6 +127,9 @@ public class Client  {
 				System.out.println("Input not correct. To begin game enter: Start");
 				start = scan.readLine();
 			}
+			
+			client.put(requestStartGame());
+			
 		} catch (IOException e) {
 			System.out.println("Error reading line.");
 		}
@@ -146,7 +154,7 @@ public class Client  {
 		return integer;
 	}
 
-	void put(Tuple tuple) { //To send a message to the server
+	private void put(Tuple tuple) { //To send a message to the server
 		try {
 			sOutput.writeObject(tuple);
 		} catch (IOException e) {
@@ -160,79 +168,58 @@ public class Client  {
 		//start the connection to the Server.
 		client.start();	
 	}
-	
-	public void startLoginPhase() {
-		System.out.println("Login - enter username: ");
-		String name;
-		try {
-			name = scan.readLine();
-			client.put(login(name));
-		} catch (IOException e) {
-			System.out.println("Error scanning line.");
-		}
-	}
 
-	public void read(Tuple tuple) { //For get-commands: get questions, get answers.
+	private void read(Tuple tuple) { //For get-commands: get questions, get answers.
 		try {
 			sOutput.writeObject(tuple);
 		} catch (IOException e) {
 			e.printStackTrace();
 		}
 	}
-
-
-	class ListenFromServer extends Thread { //ListenServer is a Thread that listens for messages from the server and displays them real-time in the console as they are received.
-		public void run() {
-			while(true) {
-				try {
-					Tuple tuple = (Tuple) sInput.readObject();
-					//Analyze object and do task.
-					
-					switch (tuple.getCommand()) {
-					case 0:
-						System.out.println((String) tuple.get(0));
-					case 1: // Server returns the name
-						user = new User((String) tuple.get(0));
-						break;
-					case 6: // Server returns the question
-						System.out.println(tuple.get(0));
-						break;
-					case 8: // Server returns choices as List<String>
-						printChoices((List<?>) tuple.get(0));
-						break;
-					case 9: // Server returns the game's phase
-						int phase = (int) tuple.get(0);
-						if (phase == 3)
-							gameStarted = false;
-						else if (phase >= 0)
-							gameStarted = true;
-						break;
-					case 10: // Server returns scores as HashMap<User, Integer>
-						printScores((HashMap<?, ?>) tuple.get(0));
-						break;
-					}
-				}
-				catch(IOException e) {
-					e.printStackTrace();
-				}
-				catch(ClassNotFoundException e2) {}
+	
+	private void listenFromServer() {
+		try {
+			Tuple tuple = (Tuple) sInput.readObject();
+			//Analyze object and do task.
+			
+			switch (tuple.getCommand()) {
+			case Tuple.ERROR:
+				System.out.println((String) tuple.get(0));
+			case Tuple.QUESTION: // Server returns the question
+				System.out.println(tuple.get(0));
+				break;
+			case Tuple.CHOICES: // Server returns choices as List<String>
+				printChoices((List<?>) tuple.get(0));
+				break;
+			case Tuple.PHASE: // Server returns the game's phase
+				int phase = (int) tuple.get(0);
+				if (phase == 3)
+					gameStarted = false;
+				break;
+			case Tuple.SCORES: // Server returns scores as HashMap<User, Integer>
+				printScores((HashMap<?, ?>) tuple.get(0));
+				break;
 			}
 		}
-		
-		private void printChoices(List<?> choices) {
-			int i = 0;
-			for (Object choice : choices) {
-				System.out.println(++i + ": " + (String) choice);
-			}
+		catch(IOException e) {
+			e.printStackTrace();
 		}
-
-		private void printScores(HashMap<?, ?> hashMap) {
-			System.out.println("Users with their corresponding score:");
-			for (Map.Entry<?, ?> user : hashMap.entrySet()) 
-				System.out.println(((User) user).getName() + " " + (int) user.getValue());
-		}
+		catch(ClassNotFoundException e2) {}
 	}
 	
+	private void printChoices(List<?> choices) {
+		int i = 0;
+		for (Object choice : choices) {
+			System.out.println(++i + ": " + (String) choice);
+		}
+	}
+
+	private void printScores(HashMap<?, ?> hashMap) {
+		System.out.println("Users with their corresponding score:");
+		for (Map.Entry<?, ?> user : hashMap.entrySet()) 
+			System.out.println(((User) user).getName() + " " + (int) user.getValue());
+	}
+
 	private Tuple login(String name) {
 		Tuple tuple = new Tuple(1);
 		tuple.put(name);
@@ -247,10 +234,9 @@ public class Client  {
 		return tuple;
 	}
 	
-	private Tuple joinGame(String name, User user) {
+	private Tuple joinGame(String name) {
 		Tuple tuple = new Tuple(3);
 		tuple.put(name);
-		tuple.put(user);
 		return tuple;
 	}
 	
