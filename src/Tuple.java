@@ -47,9 +47,12 @@ public class Tuple implements Serializable {
 			REQUESTNEWGAME = 2,
 			JOINGAME = 3,
 			ANSWER = 4,
-			CHOICE = 5,
+			CHOOSE = 5,
 			QUESTION = 6,
-			STARTGAMEREQUEST = 7;
+			REQUESTSTARTGAME = 7,
+			CHOICES = 8,
+			PHASE = 9,
+			SCORES = 10;
 
 	private int command;
 	private ArrayList<Object> data;
@@ -64,8 +67,8 @@ public class Tuple implements Serializable {
 	}
 
 	public void put(Object data) {
-		if (data == null)
-			data = new ArrayList<Object>();
+		if (this.data == null)
+			this.data = new ArrayList<Object>();
 		this.data.add(data);
 	}
 
