@@ -35,7 +35,7 @@ public class Game {
 		this.numOfAnswers = 0;
 		this.server = server;
 		this.gameSize = gameSize;
-		this.eligableUsers = users.size();
+		this.eligableUsers = 0;
 		this.users = new ArrayList<User>();
 		this.usersRequestingStart = new ArrayList<User>();
 
