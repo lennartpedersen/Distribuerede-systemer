@@ -154,8 +154,6 @@ public class Game {
 
 	public void addAnswer(User user, String answer) throws Exception {
 		if (!user.isSpectator()) {
-			this.answers.put(answer, user);
-			this.numOfAnswers++;
 
 			// if correct answer
 			if (answerCheck(answer)) {
@@ -165,6 +163,10 @@ public class Game {
 				Tuple tuple = new Tuple(11);
 				tuple.put(user);
 				server.sendToAll(this.users,tuple);
+				
+			} else {
+				this.answers.put(answer, user);
+				this.numOfAnswers++;
 			}
 
 			// if all non spectator users have send their answers, begin next
