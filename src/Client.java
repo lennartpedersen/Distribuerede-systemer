@@ -185,6 +185,7 @@ public class Client  {
 			switch (tuple.getCommand()) {
 			case Tuple.ERROR:
 				System.out.println((String) tuple.get(0));
+				break;
 			case Tuple.QUESTION: // Server returns the question
 				System.out.println(tuple.get(0));
 				break;
