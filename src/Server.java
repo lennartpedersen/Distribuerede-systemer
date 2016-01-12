@@ -239,9 +239,7 @@ public class Server {
 							break;
 					}
 				} catch (Exception e) {
-					Tuple tuple = new Tuple(Tuple.ERROR);
-					tuple.put(e);
-					sendData(tuple);
+					sendStatus(e.getMessage());
 				}
 			}
 			remove(this); //Removes this ClientThread from Server's threadlist.
