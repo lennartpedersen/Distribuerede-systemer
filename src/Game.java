@@ -181,8 +181,10 @@ public class Game {
 	public boolean answerCheck(String userAnswer) {
 		String uAnswer = userAnswer.toLowerCase(), cAnswer = currentQuestion.getAnswer().toLowerCase();
 
-		// Add additional matching
-
+		//Removes whitespaces from both strings
+		uAnswer = uAnswer.replaceAll("\\s", "");
+		cAnswer = cAnswer.replaceAll("\\s", "");
+		
 		return cAnswer.equals(uAnswer);
 	}
 
