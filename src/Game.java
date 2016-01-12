@@ -1,4 +1,6 @@
 import java.util.ArrayList;
+import java.util.Collections;
+import java.util.Comparator;
 import java.util.HashMap;
 import java.util.Iterator;
 import java.util.List;
@@ -23,7 +25,7 @@ public class Game {
 	private List<User> users;
 	private List<User> usersRequestingStart;
 	private List<Question> questionList;
-	private HashMap<User, Integer> scores;
+	private List<Score> scores;
 	private HashMap<String, User> answers;
 	private HashMap<User, String> choices;
 
@@ -41,9 +43,9 @@ public class Game {
 		this.currentQuestion = questionList.get(0);
 		iterator = questionList.iterator();
 
-		this.scores = new HashMap<>();
+		this.scores = new ArrayList<Score>();
 		for (User user : users) {
-			scores.put(users.get(users.indexOf(user)), 0);
+			scores.add(new Score(users.get(users.indexOf(user)), 0));
 		}
 
 		answers = new HashMap<>();
@@ -104,16 +106,17 @@ public class Game {
 			evalateTotalScore();
 
 			tuple = new Tuple(10);
-			ArrayList<User> users = new ArrayList<User>();
-			ArrayList<Integer> scores = new ArrayList<Integer>();
-			
+
 			//Create lists of scores and users and sort both
-			Iterator<Entry<User, Integer>> scoresIterator = this.scores.entrySet().iterator();
-			while (scoresIterator.hasNext()) {
-				HashMap.Entry<User, Integer> scoresPair = (Entry<User, Integer>) scoresIterator.next();
-				users.add(scoresPair.getKey());
-				scores.add(scoresPair.getValue());
-			}
+			Collections.sort(this.scores, new Comparator<Score>() {
+
+				@Override
+				public int compare(Score s1, Score s2) {
+					// TODO Auto-generated method stub
+					return s1.getValue() - s2.getValue();
+				}
+
+			});
 			
 			// send score info and positions to server
 			tuple.put(users);
