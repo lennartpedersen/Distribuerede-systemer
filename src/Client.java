@@ -118,7 +118,7 @@ public class Client  {
 			}
 			
 			client.put(joinGame(gameName)); 
-
+			listenFromServer();
 			// Players can put a start-game request - if all players have
 			// requested this then the game starts.
 			System.out.println("When you are ready to begin the game please enter: Start");
@@ -129,7 +129,7 @@ public class Client  {
 			}
 			
 			client.put(requestStartGame());
-			
+			listenFromServer();
 		} catch (IOException e) {
 			System.out.println("Error reading line.");
 		}
