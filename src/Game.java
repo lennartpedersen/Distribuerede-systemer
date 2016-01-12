@@ -17,22 +17,24 @@ public class Game {
 	private int eligableUsers;
 	private int numOfAnswers;
 
+	private Server server;
+	private Iterator<Question> iterator;
+	private Question currentQuestion;
 	private List<User> users;
 	private List<User> usersRequestingStart;
 	private List<Question> questionList;
-	private Iterator<Question> iterator;
-	private Question currentQuestion;
 	private HashMap<User, Integer> scores;
 	private HashMap<String, User> answers;
 	private HashMap<User, String> choices;
 
-	public Game(ArrayList<User> users, List<Question> questions, int gameSize) {
+	public Game(Server server, List<Question> questions, int gameSize) {
 		this.phase = -1;
-		this.gameSize = gameSize;
 		this.gameRound = 1;
-		this.eligableUsers = users.size();
 		this.numOfAnswers = 0;
-		this.users = users;
+		this.server = server;
+		this.gameSize = gameSize;
+		this.eligableUsers = users.size();
+		this.users = new ArrayList<User>();
 		this.usersRequestingStart = new ArrayList<User>();
 
 		this.questionList = questions;
@@ -46,24 +48,29 @@ public class Game {
 
 		answers = new HashMap<>();
 		choices = new HashMap<>();
-	}
-
-	// Begin game
-	public Question beginGame() {
-		phase = 0;
-		// first Question is sent to users
-		return getCurrentQuestion();
 
 	}
 
-	public void nextPhase() throws Exception {
-		this.phase = (phase % 3) + 1;
+	private void nextPhase() throws Exception {
 
-		switch (phase) {
-		// Phase 0 - Next round, Set next Question as current question, reset
+		if (this.phase == -1) {
+			this.phase = 0;
+		} else {
+			this.phase = (phase % 3) + 1;
+		}
+
+		Tuple phaseTuple;
+		phaseTuple = new Tuple(9);
+		phaseTuple.put(this.phase);
+		server.sendToAll(users, phaseTuple);
+
+		Tuple tuple;
+			switch (phase) {
+
 		case 0:
+			// Phase 0 - Next round, Set next Question as current question,
+			// reset
 			if (iterator.hasNext()) {
-				currentQuestion = getCurrentQuestion();
 				currentQuestion = iterator.next();
 				this.numOfAnswers = 0;
 				answers.clear();
@@ -71,68 +78,100 @@ public class Game {
 			} else {
 				throw new Exception("Error : Game had more rounds than amount of questions.");
 			}
+			// send Question to users
+			tuple = new Tuple(6);
+			tuple.put(getCurrentQuestion());
+
+			this.server.sendToAll(this.users, tuple);
 			break;
 
-		// Phase 1 - All eligible users have send their answers. These have been
-		// stored and scores evaluated.
-		// Send the list of answers to all users for the Choosing Phase.
 		case 1:
+			// Phase 1 - All eligible users have send their answers. These have
+			// been
+			// stored and scores evaluated.
+			// Send the list of answers to all users for the Choosing Phase.
+			tuple = new Tuple(8);
+			tuple.put(getListOfAnswers());
+			server.sendToAll(this.users, tuple);
 			// send list of answers to server
 			break;
 
-		// Phase 2 - All eligible users have given their choice. These have been
-		// stored and scores need to be evaluated.
-		// Info on scores and positioning needs to be send to all users.
 		case 2:
-			Iterator<Entry<String, User>> answersIterator = answers.entrySet().iterator();
-			Iterator<Entry<User, String>> choicesIterator = choices.entrySet().iterator();
-			while (answersIterator.hasNext()) {
-				HashMap.Entry<String, User> answersPair = (Entry<String, User>) answersIterator.next();
-				HashMap.Entry<User, String> choicesPair = (Entry<User, String>) choicesIterator.next();
-				while (choicesIterator.hasNext()) {
-					// if answer was chosen, award points to associated user
-					if (answersPair.getKey().equals(choicesPair.getValue()))
-						incrementScore((User) answersPair.getValue(), 1);
-				}
-			}
-			// send score info and positions to server
+			// Phase 2 - All eligible users have given their choice. These have
+			// been
+			// stored and scores need to be evaluated.
+			// Info on scores and positioning needs to be send to all users.
+			evalateChoiceScore();
 
+			tuple = new Tuple(10);
+			ArrayList<User> users = new ArrayList<User>();
+			ArrayList<Integer> scores = new ArrayList<Integer>();
+			
+			//Create lists of scores and users and sort both
+			Iterator<Entry<User, Integer>> scoresIterator = this.scores.entrySet().iterator();
+			while (scoresIterator.hasNext()) {
+				HashMap.Entry<User, Integer> scoresPair = (Entry<User, Integer>) scoresIterator.next();
+				users.add(scoresPair.getKey());
+				scores.add(scoresPair.getValue());
+			}
+			
+			// send score info and positions to server
+			tuple.put(users);
+			tuple.put(scores);
+			server.sendToAll(this.users, tuple);
+		
 			// if last round
 			if (gameRound >= questionList.size()) {
-				// announce winner.
+				// end game
+			} else {
+				gameRound++;
 
 				// spectators can now participate
 				for (User user : users)
 					user.setSpectator(false);
+			}
 
-			} else
-				gameRound++;
+			nextPhase();
 			break;
 		default:
 			throw new Exception("Error : Invalid Game Phase.");
 		}
 	}
 
-	public boolean addAnswer(User user, String answer) throws Exception {
+	private void evalateChoiceScore() {
+		Iterator<Entry<String, User>> answersIterator = this.answers.entrySet().iterator();
+		Iterator<Entry<User, String>> choicesIterator = this.choices.entrySet().iterator();
+		while (answersIterator.hasNext()) {
+			HashMap.Entry<String, User> answersPair = (Entry<String, User>) answersIterator.next();
+			HashMap.Entry<User, String> choicesPair = (Entry<User, String>) choicesIterator.next();
+			while (choicesIterator.hasNext()) {
+				// if answer was chosen, award points to associated user
+				if (answersPair.getKey().equals(choicesPair.getValue()))
+					incrementScore((User) answersPair.getValue(), 1);
+			}
+		}
+	}
+
+	public void addAnswer(User user, String answer) throws Exception {
 		if (!user.isSpectator()) {
 			this.answers.put(answer, user);
 			this.numOfAnswers++;
+
+			// if correct answer
+			if (answerCheck(answer)) {
+				incrementScore(user, 3);
+				
+				// user needs to give another answer
+				Tuple tuple = new Tuple(11);
+				tuple.put(user);
+				server.sendToAll(this.users,tuple);
+			}
 
 			// if all non spectator users have send their answers, begin next
 			// phase
 			if (this.numOfAnswers >= this.eligableUsers)
 				nextPhase();
-
-			// if correct answer
-			if (answerCheck(answer)) {
-				incrementScore(user, 3);
-				// user needs to give another answer
-				return true;
-			}
-			// Answer was false, user won't need to give another answer
-			return false;
 		}
-		return false;
 	}
 
 	// make work
@@ -152,7 +191,6 @@ public class Game {
 	public void addUser(User user) throws Exception {
 		if (this.users.size() < gameSize) {
 			this.users.add(user);
-
 			if (isStarted())
 				user.setSpectator(true);
 			else
@@ -162,8 +200,10 @@ public class Game {
 		}
 	}
 
-	public void addRequest(User user) {
+	public void addRequest(User user) throws Exception {
 		this.usersRequestingStart.add(user);
+		if (this.usersRequestingStart.size() >= this.eligableUsers)
+			nextPhase();
 	}
 
 	private void incrementScore(User user, int score) {
@@ -174,10 +214,10 @@ public class Game {
 		return phase >= 0;
 	}
 
-	public boolean isGameReady() {
-		return (this.usersRequestingStart.size() >= this.users.size());
-	}
-
+	// public boolean isGameReady() {
+	// return (this.usersRequestingStart.size() >= this.users.size());
+	// }
+	//
 	public boolean answerCheck(String userAnswer) {
 		String uAnswer = userAnswer.toLowerCase(), cAnswer = currentQuestion.getAnswer().toLowerCase();
 
@@ -196,7 +236,7 @@ public class Game {
 
 	public List<String> getListOfAnswers() {
 		List<String> listOfAnswers = new ArrayList<String>();
-		Iterator<Entry<String, User>> answersIterator = answers.entrySet().iterator();
+		Iterator<Entry<String, User>> answersIterator = this.answers.entrySet().iterator();
 		while (answersIterator.hasNext()) {
 			HashMap.Entry<String, User> answerPair = (Entry<String, User>) answersIterator.next();
 			listOfAnswers.add(answerPair.getKey());
@@ -205,6 +245,7 @@ public class Game {
 	}
 
 	public HashMap<User, String> getListOfChoices() {
+		// convert to list
 		return getChoicesMap();
 	}
 
@@ -212,7 +253,7 @@ public class Game {
 		return this.choices;
 	}
 
-	public Question getCurrentQuestion() {
+	private Question getCurrentQuestion() {
 		return this.currentQuestion;
 	}
 }
