@@ -109,9 +109,10 @@ public class Server {
 	}
 	
 	//Methods for managing games
-	public void newGame(String name, Game game) throws Exception{ //Add a game to collection.
+	public void newGame(String name, List<Question> questions, int size) throws Exception{ //Add a game to collection.
 		if (gameExists(name))
 			throw new Exception("Game with that name already exists.");
+		Game game = new Game(this, questions, size);
 		gameList.put(name, game);
 	}
 	
@@ -125,26 +126,11 @@ public class Server {
 		user.setGame(game);
 	}
 	
-	public void startGame(String gamename) throws Exception{ //Start a specified game.
-		if (!gameExists(gamename))
-			throw new Exception("Game with that name doesn't exist.");
-		gameList.get(gamename).beginGame();
-	}
-	
-	public Question getQuestion(String gamename){ //Return current question for specified game.
-		return gameList.get(gamename).getCurrentQuestion();
-	}
-	
-	public void evaluateChoices(){ //No idea what this does...
-		//TODO
-	}
-	
-	public boolean requestStartGame(User user) throws Exception { //Request the start of the game tied to given user.
+	public void requestStartGame(User user) throws Exception { //Request the start of the game tied to given user.
 		Game game = user.getGame();
 		if (game == null)
 			throw new Exception("You must join a game before you can be ready.");
 		game.addRequest(user);
-		return game.isGameReady();
 	}
 	
 	public void chooseAnswer(User user, int choice) throws Exception { //User chooses an answer they believe is the correct answer.
@@ -208,7 +194,7 @@ public class Server {
 							int size = (int) task.get(1);
 							int length = (int) task.get(2);
 							List<Question> questions = questionsDatabase.getQuestions(length);
-							newGame(name, new Game(questions, size));
+							newGame(name, questions, size);
 							sendStatus("Game created.");
 							break;
 						case Tuple.JOINGAME: //Add user to an active game
@@ -223,9 +209,6 @@ public class Server {
 						case Tuple.CHOOSE:
 							int answer = (int) task.get(0);
 							chooseAnswer(user, answer);
-							break;
-						case Tuple.PHASE:
-							
 							break;
 							//Add new command here.
 							/*
