@@ -7,7 +7,9 @@ import java.net.Socket;
 import java.net.SocketException;
 import java.util.ArrayList;
 import java.util.HashMap;
+import java.util.Iterator;
 import java.util.List;
+import java.util.Map.Entry;
 
 public class Server {
 	
@@ -17,7 +19,7 @@ public class Server {
 	private ArrayList<ClientThread> threadlist = new ArrayList<ClientThread>(); //a list of currently active threads and tasks. Allows to close threads and sockets.
 	
 	public QuestionDB questionsDatabase = new QuestionDB(); //Question database
-	public ArrayList<User> clientList = new ArrayList<User>(); //List of users and active game. Should be written and read as file?
+	public HashMap<User, ClientThread> clientList = new HashMap<User, ClientThread>(); //List of users, their active game and their clientthread.
 	public HashMap<String, Game> gameList = new HashMap<String, Game>(); //List of games, key is name of the game as String. Should be written and read as file?
 	
 	//Constructor
@@ -36,8 +38,8 @@ public class Server {
 			//infinite loop to wait for connections
 			while(true) {
 				Socket socket = serverSocket.accept();  	//wait for connection to accept
-				ClientThread thread = new ClientThread(socket);
-				threadlist.add(thread);		//make a new ClientThread to handle connection
+				ClientThread thread = new ClientThread(socket); //make a new ClientThread to handle connection
+				threadlist.add(thread);
 				thread.start();
 			}
 		} catch (SocketException e) { //Exception thrown if server socket is closed while Socket.accept() is running.
@@ -78,8 +80,8 @@ public class Server {
 		return true;
 	}
 	
-	public void addUser(User user){ //Add user as an active client.
-		clientList.add(user);
+	public void addUser(User user, ClientThread clientThread){ //Add user as an active client.
+		clientList.put(user, clientThread);
 	}
 	
 	public void removeUser(User user) { //Removes user from clientlist. Quit game. Username is freed.
@@ -95,8 +97,9 @@ public class Server {
 	}
 
 	public boolean nameExists(String name) {
-		for (User user : clientList)
-			if (name.equals(user.getName())) 
+		Iterator<Entry<User, ClientThread>> iterator = clientList.entrySet().iterator();
+		while (iterator.hasNext())
+			if (name.equals(iterator.next().getKey().getName())) 
 				return true;		
 		return false;
 	}
@@ -120,7 +123,6 @@ public class Server {
 		game.addUser(user);
 		//Add user to clientList, for keeping track of current active game for user
 		user.setGame(game);
-		clientList.add(user);
 	}
 	
 	public void startGame(String gamename) throws Exception{ //Start a specified game.
@@ -151,6 +153,15 @@ public class Server {
 			throw new Exception("You must join a game before you can be choose an answer.");
 		String answer = game.getListOfAnswers().get(choice);
 		game.addChoice(user, answer);
+	}
+	
+	public void sendToAll(List<User> list, Command data){ //Send the given data to all users on the given list.
+		Iterator<User> iterator = list.iterator();
+		while(iterator.hasNext()){
+			ClientThread thread = clientList.get(iterator.next());
+			if (thread != null)
+				thread.sendData(data);
+		}	
 	}
 	
 	class ClientThread extends Thread { //Threads used to perform tasks for individual clients
@@ -185,7 +196,7 @@ public class Server {
 					switch (command){ //Decode command switch
 						case "login":
 							isUserAllowed(task.getUser().getName()); //Check if name already exists. Throws exception currently, why it is not in an if statement.
-							clientList.add(user);
+							addUser(user, this);
 							user = task.getUser();
 							break;
 						case "requestgame": //Creates a new game
