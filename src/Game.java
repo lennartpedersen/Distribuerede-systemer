@@ -101,7 +101,7 @@ public class Game {
 			// been
 			// stored and scores need to be evaluated.
 			// Info on scores and positioning needs to be send to all users.
-			evalateChoiceScore();
+			evalateTotalScore();
 
 			tuple = new Tuple(10);
 			ArrayList<User> users = new ArrayList<User>();
@@ -138,7 +138,7 @@ public class Game {
 		}
 	}
 
-	private void evalateChoiceScore() {
+	private void evalateTotalScore() {
 		Iterator<Entry<String, User>> answersIterator = this.answers.entrySet().iterator();
 		Iterator<Entry<User, String>> choicesIterator = this.choices.entrySet().iterator();
 		while (answersIterator.hasNext()) {
@@ -153,7 +153,7 @@ public class Game {
 	}
 
 	public void addAnswer(User user, String answer) throws Exception {
-		if (!user.isSpectator()) {
+		if (!user.isSpectator() && getPhase()==0){
 
 			// if correct answer
 			if (answerCheck(answer)) {
@@ -178,7 +178,7 @@ public class Game {
 
 	// make work
 	public void addChoice(User user, String choice) throws Exception {
-		if (!user.isSpectator()) {
+		if (!user.isSpectator() && getPhase()==1) {
 			this.choices.put(user, choice);
 			// if all users have given their choice, go to the next phase
 
@@ -203,9 +203,11 @@ public class Game {
 	}
 
 	public void addRequest(User user) throws Exception {
+		if(!isStarted()){
 		this.usersRequestingStart.add(user);
 		if (this.usersRequestingStart.size() >= this.eligableUsers)
 			nextPhase();
+		}
 	}
 
 	private void incrementScore(User user, int score) {
@@ -213,23 +215,15 @@ public class Game {
 	}
 
 	private boolean isStarted() {
-		return phase >= 0;
+		return getPhase() >= 0;
 	}
 
-	// public boolean isGameReady() {
-	// return (this.usersRequestingStart.size() >= this.users.size());
-	// }
-	//
 	public boolean answerCheck(String userAnswer) {
 		String uAnswer = userAnswer.toLowerCase(), cAnswer = currentQuestion.getAnswer().toLowerCase();
 
 		// Add additional matching
 
 		return cAnswer.equals(uAnswer);
-	}
-
-	public boolean phaseCheck(int phase) {
-		return (getPhase() == phase);
 	}
 
 	private int getPhase() {
@@ -244,15 +238,6 @@ public class Game {
 			listOfAnswers.add(answerPair.getKey());
 		}
 		return listOfAnswers;
-	}
-
-	public HashMap<User, String> getListOfChoices() {
-		// convert to list
-		return getChoicesMap();
-	}
-
-	private HashMap<User, String> getChoicesMap() {
-		return this.choices;
 	}
 
 	private Question getCurrentQuestion() {
