@@ -170,7 +170,7 @@ public class Server {
 		ObjectInputStream sInput; //input from client
 		ObjectOutputStream sOutput; //output to client
 		User user;
-		Command task; //current task
+		Tuple task; //current task
 
 		//Constructor
 		ClientThread(Socket socket) {
@@ -191,30 +191,41 @@ public class Server {
 		public void run() { //Decode command object and perform necessary tasks.
 			while (readData()){ //Read Command object from inputstream. Decode command only if data reading is successful.
 				//Decode Commmand object and perform task.
-				String command = task.getCommand();
+				
 				try {
-					switch (command){ //Decode command switch
-						case "login":
-							isUserAllowed(task.getUser().getName()); //Check if name already exists. Throws exception currently, why it is not in an if statement.
-							addUser(user, this);
-							user = task.getUser();
-							break;
-						case "requestgame": //Creates a new game
-							ArrayList<User> users = new ArrayList<User>();
-							users.add(task.getUser());
-							List<Question> questions = questionsDatabase.getQuestions(task.getGameLength());
-							newGame(task.getGameName(), new Game(users, questions, task.getGameSize()));
-							break;
-						case "joingame": //Add user to an active game
-							addUserToGame(task.getGameName(), task.getUser());
-							break;
-						case "startGameRequest":
-							if (requestStartGame(user)){
-								sendData(new Command("questions", user.getGame().getCurrentQuestion()));
+					String name;
+					switch (task.getCommand()){ //Decode command switch
+						case Tuple.LOGIN:
+							name = (String) task.get(0);
+							if (isUserAllowed(name)) {
+								user = new User(name);
+								addUser(user, this);
+								sendStatus("User created.");
 							}
 							break;
-						case "choice":
-							chooseAnswer(user, task.getChoice());
+						case Tuple.REQUESTNEWGAME: //Creates a new game
+							name = (String) task.get(0);
+							int size = (int) task.get(1);
+							int length = (int) task.get(2);
+							List<Question> questions = questionsDatabase.getQuestions(length);
+							newGame(name, new Game(questions, size));
+							sendStatus("Game created.");
+							break;
+						case Tuple.JOINGAME: //Add user to an active game
+							name = (String) task.get(0);
+							addUserToGame(name, user);
+							sendStatus("Joined game.");
+							break;
+						case Tuple.REQUESTSTARTGAME:
+							requestStartGame(user);
+							sendStatus("Start requested.");
+							break;
+						case Tuple.CHOOSE:
+							int answer = (int) task.get(0);
+							chooseAnswer(user, answer);
+							break;
+						case Tuple.PHASE:
+							
 							break;
 							//Add new command here.
 							/*
@@ -227,17 +238,23 @@ public class Server {
 							close();
 							break;
 					}
-				}catch (Exception e){
-					sendData(new Command("Error", e));
+				} catch (Exception e) {
+					sendStatus(e.getMessage());
 				}
 			}
 			remove(this); //Removes this ClientThread from Server's threadlist.
 			close(); //Closes all streams. DO NOT REMOVE.
 		}
 		
-		public boolean sendData(Object data){ //Sends object to connected client.
+		private void sendStatus(String status) {
+			Tuple tuple = new Tuple(Tuple.ERROR);
+			tuple.put(status);
+			sendData(tuple);
+		}
+		
+		public boolean sendData(Object object){ //Sends object to connected client.
 			try {
-				sOutput.writeObject(data);
+				sOutput.writeObject(object);
 				return true;
 			} catch (IOException e) {
 				System.err.println("Error sending data to client.");
@@ -248,7 +265,7 @@ public class Server {
 		
 		public boolean readData(){ //Reads object from connected client.
 			try {
-				task = (Command) sInput.readObject();
+				task = (Tuple) sInput.readObject();
 				return true;
 			} catch (ClassNotFoundException e) {
 				System.err.println("Invalid data from client '"+socket.getInetAddress()+"', connection closed.");
