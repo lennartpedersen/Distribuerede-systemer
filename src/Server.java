@@ -126,13 +126,6 @@ public class Server {
 		user.setGame(game);
 	}
 	
-	public void requestStartGame(User user) throws Exception { //Request the start of the game tied to given user.
-		Game game = user.getGame();
-		if (game == null)
-			throw new Exception("You must join a game before you can be ready.");
-		game.addRequest(user);
-	}
-	
 	public void chooseAnswer(User user, int choice) throws Exception { //User chooses an answer they believe is the correct answer.
 		Game game = user.getGame();
 		if (game == null)
@@ -162,6 +155,34 @@ public class Server {
 			if (thread != null)
 				thread.sendData(data);
 		}	
+	}
+	
+	public void requestStartGame(User user) throws Exception { //Request the start of the game tied to given user.
+		Game game = user.getGame();
+		if (game == null)
+			throw new Exception("You must join a game before you can be ready.");
+		game.requestStartGame();
+	}
+
+	public void requestQuestion(User user) throws Exception {
+		Game game = user.getGame();
+		if (game == null)
+			throw new Exception("You must join a game before you can be choose an answer.");
+		game.requestQuestion();
+	}
+
+	public void requestChoices(User user) throws Exception {
+		Game game = user.getGame();
+		if (game == null)
+			throw new Exception("You must join a game before you can be choose an answer.");
+		game.requestChoices();
+	}
+	
+	public void addAnswer(User user, String answer) throws Exception {
+		Game game = user.getGame();
+		if (game == null)
+			throw new Exception("You must join a game before you can be choose an answer.");
+		game.addAnswer(user, answer);
 	}
 	
 	class ClientThread extends Thread { //Threads used to perform tasks for individual clients
@@ -234,36 +255,17 @@ public class Server {
 						case Tuple.CHOOSE:
 							int choice = (int) task.get(0);
 							chooseAnswer(user, choice);
-							sendStatus("Choice received.");
-							
-							System.out.println("Answer from user "+user.getName()+" received: "+choice+" Answer choosen: "+user.getGame().getListOfAnswers().get(choice)); //TODO Testing. remove later.
-							
 							break;
 						case Tuple.ANSWER:
 							String answer = (String) task.get(0);
 							addAnswer(user, answer);
-							sendStatus("Answer received.");
-							
-							System.out.println(user.getName()+" gives answer: "+answer+" "+user.getGame().getListOfAnswers().contains(answer)); //TODO Testing. remove later.
-							
+							sendStatus("Answer recieved.");
 							break;
-						case Tuple.QUESTION: //Sends current question in active game to client. HANDLED BY GAME.
-							//Tuple tuple = new Tuple(Tuple.QUESTION);
-							//Question question = getQuestion(user);
-							//tuple.put(question);
-							//sendData(tuple);
-							
-							//System.out.println("Question '"+question.getQuestion()+"' send to "+user.getName()); //TODO Testing. remove later.
-							
+						case Tuple.QUESTION:
+							requestQuestion(user);
 							break;
-						case Tuple.CHOICES: //Send choices in active game to client. HANDLED BY GAME.
-							
-							break;
-						case Tuple.PHASE: //Send current phase of the active game. HANDLED BY GAME.
-							
-							break;
-						case Tuple.SCORES: //Send the current score of active game. HANDLED BY GAME.
-							
+						case Tuple.CHOICES:
+							requestChoices(user);
 							break;
 							//Add new command here.
 							/*
