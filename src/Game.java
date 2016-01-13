@@ -16,16 +16,16 @@ public class Game {
 	private int phase;
 	private int gameSize;
 	private int gameRound;
-	private int eligableUsers;
+
+	private int usersRequests;
 	private int numOfAnswers;
 
 	private Server server;
 	private Iterator<Question> iterator;
 	private Question currentQuestion;
 	private List<User> users;
-	private List<User> usersRequestingStart;
 	private List<Question> questionList;
-	
+
 	private HashMap<User, Integer> scoresIndexMap;
 	private List<Score> scores;
 	private HashMap<String, User> answers;
@@ -37,9 +37,8 @@ public class Game {
 		this.numOfAnswers = 0;
 		this.server = server;
 		this.gameSize = gameSize;
-		this.eligableUsers = 0;
 		this.users = new ArrayList<User>();
-		this.usersRequestingStart = new ArrayList<User>();
+		this.usersRequests = 0;
 
 		this.questionList = questions;
 		this.currentQuestion = questionList.get(0);
@@ -69,39 +68,33 @@ public class Game {
 		server.sendToAll(users, phaseTuple);
 
 		Tuple tuple;
-			switch (phase) {
+		switch (phase) {
 
 		case 0:
 			// Phase 0 - Next round, Set next Question as current question,
 			// reset
 			if (iterator.hasNext()) {
-				currentQuestion = iterator.next();
+				this.currentQuestion = iterator.next();
 				this.numOfAnswers = 0;
-				answers.clear();
-				choices.clear();
+				this.answers.clear();
+				this.choices.clear();
+				this.usersRequests=0;
 			} else {
 				throw new Exception("Error : Game had more rounds than amount of questions.");
 			}
-			// send Question to users
-			tuple = new Tuple(Tuple.QUESTION);
-			tuple.put(getCurrentQuestion().getQuestion());
-
-			this.server.sendToAll(this.users, tuple);
 			break;
 
 		case 1:
-			// Phase 1 - All eligible users have send their answers. These have
+			// Phase 1 - All users have send their answers. These have
 			// been
 			// stored and scores evaluated.
 			// Send the list of answers to all users for the Choosing Phase.
-			tuple = new Tuple(Tuple.CHOICES);
-			tuple.put(getListOfAnswers());
-			server.sendToAll(this.users, tuple);
+			this.usersRequests=0;
 			// send list of answers to server
 			break;
 
 		case 2:
-			// Phase 2 - All eligible users have given their choice. These have
+			// Phase 2 - All users have given their choice. These have
 			// been
 			// stored and scores need to be evaluated.
 			// Info on scores and positioning needs to be send to all users.
@@ -109,7 +102,7 @@ public class Game {
 
 			tuple = new Tuple(Tuple.SCORES);
 
-			//Create lists of scores and users and sort both
+			// Create lists of scores and users and sort both
 			Collections.sort(this.scores, new Comparator<Score>() {
 
 				@Override
@@ -119,19 +112,19 @@ public class Game {
 				}
 
 			});
-			
+
 			// send score info and positions to server
 			tuple.put(users);
 			tuple.put(scores);
 			server.sendToAll(this.users, tuple);
-		
+
 			// if last round
 			if (gameRound >= questionList.size()) {
 				// end game
 			} else {
 				gameRound++;
 
-				}
+			}
 
 			nextPhase();
 			break;
@@ -155,40 +148,37 @@ public class Game {
 	}
 
 	public void addAnswer(User user, String answer) throws Exception {
-		if (getPhase()==0){
-			Tuple tuple = new Tuple(Tuple.ANSWER);
-			tuple.put(user);
+		if (getPhase() == 0) {
 
 			// if correct answer
 			if (answerCheck(answer)) {
 				incrementScore(user, 3);
-				
+
 				// user needs to give another answer
-				tuple.put(true);
-				
+				throw new Exception("Correct answer, Provide new answer");
+
 			} else {
 				this.answers.put(answer, user);
 				this.numOfAnswers++;
-				tuple.put(false);
-				
+
 			}
-			server.sendToAll(this.users,tuple);
+			
 			// if all users have send their answers, begin next phase
-			if (this.numOfAnswers >= this.eligableUsers)
+			if (this.numOfAnswers >= this.users.size())
 				nextPhase();
 		}
 	}
 
 	// make work
 	public void addChoice(User user, String choice) throws Exception {
-		if (getPhase()==1) {
+		if (getPhase() == 1) {
 			this.choices.put(user, choice);
 			// if all users have given their choice, go to the next phase
 
 			if (choice.equals(currentQuestion.getAnswer()))
 				incrementScore(user, 2);
 
-			if (this.choices.size() >= this.eligableUsers)
+			if (this.choices.size() >= this.users.size())
 				nextPhase();
 		}
 	}
@@ -197,19 +187,18 @@ public class Game {
 		if (this.users.size() < gameSize) {
 			this.users.add(user);
 			this.scoresIndexMap.put(user, scores.size());
-			this.scores.add(scores.size(), new Score(user,0));
-			
-			this.eligableUsers++;
+			this.scores.add(scores.size(), new Score(user, 0));
+
 		} else {
 			throw new Exception("Game is full, Tried to add new player to full game");
 		}
 	}
 
-	public void addRequest(User user) throws Exception {
-		if(!isStarted()){
-		this.usersRequestingStart.add(user);
-		if (this.usersRequestingStart.size() >= this.eligableUsers)
-			nextPhase();
+	public void requestStartGame(User user) throws Exception {
+		if (!isStarted()) {
+			this.usersRequests++;
+			if (this.usersRequests >= this.users.size() && this.users.size() >= 2)
+				nextPhase();
 		}
 	}
 
@@ -241,6 +230,24 @@ public class Game {
 			listOfAnswers.add(answerPair.getKey());
 		}
 		return listOfAnswers;
+	}
+
+	public void requestQuestion() {
+		this.usersRequests++;
+		if(this.usersRequests>=this.users.size()){
+		Tuple tuple = new Tuple(Tuple.QUESTION);
+		tuple.put(getCurrentQuestion().getQuestion());
+		this.server.sendToAll(this.users, tuple);
+		}
+	}
+	
+	public void requestChoices(){
+		this.usersRequests++;
+		if(this.usersRequests>=this.users.size()){
+		Tuple tuple = new Tuple(Tuple.CHOICES);
+		tuple.put(getListOfAnswers());
+		server.sendToAll(this.users, tuple);
+		}
 	}
 
 	private Question getCurrentQuestion() {
