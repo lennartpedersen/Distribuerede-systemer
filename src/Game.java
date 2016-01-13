@@ -74,7 +74,7 @@ public class Game {
 			// Phase 0 - Next round, Set next Question as current question,
 			// reset
 			if (iterator.hasNext()) {
-				this.currentQuestion = iterator.next();
+				this.currentQuestion = questionList.get(0);
 				this.numOfAnswers = 0;
 				this.answers.clear();
 				this.choices.clear();
@@ -153,7 +153,7 @@ public class Game {
 			// if correct answer
 			if (answerCheck(answer)) {
 				incrementScore(user, 3);
-
+				
 				// user needs to give another answer
 				throw new Exception("Correct answer, Provide new answer");
 
@@ -194,10 +194,10 @@ public class Game {
 		}
 	}
 
-	public void requestStartGame(User user) throws Exception {
+	public void requestStartGame() throws Exception {
 		if (!isStarted()) {
 			this.usersRequests++;
-			if (this.usersRequests >= this.users.size() && this.users.size() >= 2)
+			if (this.usersRequests >= this.users.size())
 				nextPhase();
 		}
 	}
@@ -211,10 +211,11 @@ public class Game {
 	}
 
 	public boolean answerCheck(String userAnswer) {
-		String uAnswer = userAnswer.toLowerCase(), cAnswer = currentQuestion.getAnswer().toLowerCase();
+		String uAnswer = userAnswer.toLowerCase(), 
+				cAnswer = currentQuestion.getAnswer().toLowerCase();
 
 		// Add additional matching
-
+		
 		return cAnswer.equals(uAnswer);
 	}
 

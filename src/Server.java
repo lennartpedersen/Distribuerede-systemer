@@ -150,14 +150,14 @@ public class Server {
 		game.requestStartGame();
 	}
 
-	public void requestQuestion(User user) {
+	public void requestQuestion(User user) throws Exception {
 		Game game = user.getGame();
 		if (game == null)
 			throw new Exception("You must join a game before you can be choose an answer.");
 		game.requestQuestion();
 	}
 
-	public void requestChoices(User user) {
+	public void requestChoices(User user) throws Exception {
 		Game game = user.getGame();
 		if (game == null)
 			throw new Exception("You must join a game before you can be choose an answer.");
