@@ -148,6 +148,13 @@ public class Server {
 		game.addAnswer(user, answer);
 	}
 	
+	public Question getQuestion(User user) throws Exception {
+		Game game = user.getGame();
+		if (game == null)
+			throw new Exception("You must join a game before you can request a question.");
+		return game.getCurrentQuestion();
+	}
+	
 	public void sendToAll(List<User> list, Tuple data){ //Send the given data to all users on the given list.
 		Iterator<User> iterator = list.iterator();
 		while(iterator.hasNext()){
@@ -227,6 +234,7 @@ public class Server {
 						case Tuple.CHOOSE:
 							int choice = (int) task.get(0);
 							chooseAnswer(user, choice);
+							sendStatus("Choice received.");
 							
 							System.out.println("Answer from user "+user.getName()+" received: "+choice+" Answer choosen: "+user.getGame().getListOfAnswers().get(choice)); //TODO Testing. remove later.
 							
@@ -234,11 +242,18 @@ public class Server {
 						case Tuple.ANSWER:
 							String answer = (String) task.get(0);
 							addAnswer(user, answer);
+							sendStatus("Answer received.");
 							
 							System.out.println(user.getName()+" gives answer: "+answer+" "+user.getGame().getListOfAnswers().contains(answer)); //TODO Testing. remove later.
 							
 							break;
-						case Tuple.QUESTION:
+						case Tuple.QUESTION: //Sends current question to client.
+							Tuple tuple = new Tuple(Tuple.QUESTION);
+							Question question = getQuestion(user);
+							tuple.put(question);
+							sendData(tuple);
+							
+							System.out.println("Question '"+question.getQuestion()+"' send to "+user.getName()); //TODO Testing. remove later.
 							
 							break;
 							//Add new command here.
@@ -307,5 +322,6 @@ public class Server {
 			System.out.println("Number of current threads: "+threadlist.size()+" Number of users: "+clientList.size()); //TODO Testing, remove later.
 		}
 	}
+
 }
 

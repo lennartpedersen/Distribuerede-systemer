@@ -244,7 +244,7 @@ public class Game {
 		return listOfAnswers;
 	}
 
-	private Question getCurrentQuestion() {
+	Question getCurrentQuestion() {
 		return this.currentQuestion;
 	}
 }
