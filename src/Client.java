@@ -25,7 +25,7 @@ public class Client  {
 
 	//Constructor
 	public Client() throws UnknownHostException {
-		server = InetAddress.getByName("10.16.170.153");
+		server = InetAddress.getByName("127.0.0.1");
 	}
 	
 	//Methods
@@ -79,6 +79,7 @@ public class Client  {
 						} catch (Exception e) {
 							System.out.println(e.getMessage());
 							answer = getNewAnswer(answer);
+							hasAnswer = true;
 						}
 					}
 					
