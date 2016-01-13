@@ -1,3 +1,4 @@
+import java.io.Serializable;
 import java.util.ArrayList;
 import java.util.Collections;
 import java.util.Comparator;
@@ -7,7 +8,7 @@ import java.util.List;
 import java.util.Map.Entry;
 import java.util.Random;
 
-public class Game {
+public class Game implements Serializable{
 
 	/*
 	 * phases: 0 - Start - send question 1 - Answering - Answers are received
@@ -31,16 +32,19 @@ public class Game {
 
 	private List<String> listOfAnswers ;
 	private HashMap<User, Integer> scoresIndexMap;
-	private List<Score> scores;
 	private HashMap<String, User> answers;
 	private HashMap<User, String> choices;
 	private int numOfAnswers;
 	private int choiceCounter;
+	private int gameMode;
+	private static final int Default = 0;
+	private static final int Humanity = 1;
 
 	public Game(Server server, List<Question> questions, int gameSize) {
 		phase = -1;
 		gameRound = 1;
 		numOfAnswers = 0;
+		this.gameMode = gameMode;
 		this.server = server;
 		this.gameSize = gameSize;
 		users = new ArrayList<User>();
@@ -52,11 +56,6 @@ public class Game {
 		this.questionList = questions;
 		currentQuestion = questionList.get(0);
 		iterator = questionList.iterator();
-
-		scores = new ArrayList<Score>();
-		for (User user : users) {
-			scores.add(new Score(users.get(users.indexOf(user)), 0));
-		}
 
 		answers = new HashMap<>();
 		choices = new HashMap<>();
@@ -94,9 +93,6 @@ public class Game {
 	public void addUser(User user) throws Exception {
 		if (users.size() < gameSize) {
 			users.add(user);
-			scoresIndexMap.put(user, scores.size());
-			scores.add(scores.size(), new Score(user, 0));
-
 		} else {
 			throw new Exception("Game is full, Tried to add new player to full game");
 		}
@@ -141,11 +137,11 @@ public class Game {
 			}
 		}
 
-		Collections.sort(scores, new Comparator<Score>() {
+		Collections.sort(users, new Comparator<User>() {
 			
 			@Override
-			public int compare(Score s1, Score s2) {
-				return s1.getValue() - s2.getValue();
+			public int compare(User s1, User s2) {
+				return (s1.getScore()- s2.getScore());
 			}
 		});
 
@@ -162,7 +158,7 @@ public class Game {
 	}
 
 	private void incrementScore(User user, int score) {
-		scores.get(scoresIndexMap.get(user)).incrementValue(score);
+		user.incrementScore(score);
 	}
 
 	public void requestStartGame() throws Exception {
@@ -192,9 +188,9 @@ public class Game {
 	}
 	
 	public void requestScores(){
-		Tuple	tuple = new Tuple(Tuple.SCORES);
+		System.out.println("sys out at Game.requestScore");
+		Tuple tuple = new Tuple(Tuple.SCORES);
 		tuple.put(users);
-		tuple.put(scores);
 		server.sendToAll(users, tuple);
 
 	}

@@ -164,6 +164,14 @@ public class Server {
 		game.requestChoices();
 	}
 	
+	private void requestScore(User user) throws Exception {
+		Game game = user.getGame();
+		if (game == null)
+			throw new Exception("You must join a game before you can be choose an answer.");
+		game.requestScores();
+	}
+
+	
 	public void addAnswer(User user, String answer) throws Exception {
 		Game game = user.getGame();
 		if (game == null)
@@ -201,6 +209,7 @@ public class Server {
 				
 				try {
 					String name;
+					System.out.println(tuple.getCommand());
 					switch (tuple.getCommand()){ //Decode command switch
 						case Tuple.LOGIN:
 							name = (String) tuple.get(0);
@@ -230,6 +239,9 @@ public class Server {
 						case Tuple.CHOOSE:
 							int choice = (int) tuple.get(0);
 							chooseAnswer(user, choice);
+							break;
+						case Tuple.SCORES:
+							requestScore(user);
 							break;
 						case Tuple.ANSWER:
 							String answer = (String) tuple.get(0);
@@ -262,7 +274,7 @@ public class Server {
 			remove(this); //Removes this ClientThread from Server's threadlist.
 			close(); //Closes all streams. DO NOT REMOVE.
 		}
-		
+	
 		private void sendStatus(String status) {
 			Tuple tuple = new Tuple(-1);
 			tuple.put(status);
