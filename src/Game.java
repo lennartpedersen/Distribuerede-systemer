@@ -18,8 +18,10 @@ public class Game {
 	private int gameSize;
 	private int gameRound;
 
-	private int usersRequests;
-	private int numOfAnswers;
+	private int startRequests;
+	private int questionRequests;
+	private int choiceRequests;
+
 
 	private Server server;
 	private Iterator<Question> iterator;
@@ -27,10 +29,12 @@ public class Game {
 	private List<User> users;
 	private List<Question> questionList;
 
+	private List<String> listOfAnswers ;
 	private HashMap<User, Integer> scoresIndexMap;
 	private List<Score> scores;
 	private HashMap<String, User> answers;
 	private HashMap<User, String> choices;
+	private int numOfAnswers;
 
 	public Game(Server server, List<Question> questions, int gameSize) {
 		this.phase = -1;
@@ -39,7 +43,9 @@ public class Game {
 		this.server = server;
 		this.gameSize = gameSize;
 		this.users = new ArrayList<User>();
-		this.usersRequests = 0;
+		this.startRequests = 0;
+		this.questionRequests = 0;
+		this.choiceRequests = 0;
 
 		this.questionList = questions;
 		this.currentQuestion = questionList.get(0);
@@ -138,12 +144,20 @@ Tuple tuple;
 			} else {
 				this.answers.put(answer, user);
 				this.numOfAnswers++;
+				if(numOfAnswers>=this.users.size())
+					generateAnswerList();
 
 			}
-			
-			// if all users have send their answers, begin next phase
-			if (this.numOfAnswers >= this.users.size())
-				this.usersRequests=0;
+		}
+
+	private void generateAnswerList() {
+		listOfAnswers = new ArrayList<String>();
+		Iterator<Entry<String, User>> answersIterator = this.answers.entrySet().iterator();
+		while (answersIterator.hasNext()) {
+			HashMap.Entry<String, User> answerPair = (Entry<String, User>) answersIterator.next();
+			listOfAnswers.add(answerPair.getKey());
+		}
+		listOfAnswers.add(new Random().nextInt(listOfAnswers.size()),getCurrentQuestion().getAnswer());
 	}
 
 	// make work
@@ -153,9 +167,6 @@ Tuple tuple;
 
 			if (choice.equals(currentQuestion.getAnswer()))
 				incrementScore(user, 2);
-
-			if (this.choices.size() >= this.users.size())
-				usersRequests=0;
 		}
 	
 	public void addUser(User user) throws Exception {
@@ -170,18 +181,18 @@ Tuple tuple;
 	}
 
 	public void requestStartGame() throws Exception {
-			this.usersRequests++;
-			if (this.usersRequests >= this.users.size())
-				newRound();
+			this.startRequests++;
+			System.out.println(startRequests + " " + this.users.size()); 
 	}
 
 	private void newRound() throws Exception {
 		if (iterator.hasNext()) {
-			this.currentQuestion = questionList.get(0);
-			this.numOfAnswers = 0;
-			this.answers.clear();
-			this.choices.clear();
-			this.usersRequests=0;
+			currentQuestion = questionList.get(0);
+			numOfAnswers = 0;
+			answers.clear();
+			choices.clear();
+			questionRequests=0;
+			choiceRequests=0;
 		} else {
 			throw new Exception("Error : Game had more rounds than amount of questions.");
 		}
@@ -200,19 +211,14 @@ Tuple tuple;
 	}
 
 	public List<String> getListOfAnswers() {
-		List<String> listOfAnswers = new ArrayList<String>();
-		Iterator<Entry<String, User>> answersIterator = this.answers.entrySet().iterator();
-		while (answersIterator.hasNext()) {
-			HashMap.Entry<String, User> answerPair = (Entry<String, User>) answersIterator.next();
-			listOfAnswers.add(answerPair.getKey());
-		}
-		listOfAnswers.add(new Random().nextInt(listOfAnswers.size()),getCurrentQuestion().getAnswer());
 		return listOfAnswers;
 	}
 
 	public void requestQuestion() {
-		this.usersRequests++;
-		if(this.usersRequests>=this.users.size()){
+		this.questionRequests++;
+		System.out.println(questionRequests + " " + this.users.size()); 
+		
+		if(this.questionRequests>=this.users.size()){
 		Tuple tuple = new Tuple(Tuple.QUESTION);
 		tuple.put(getCurrentQuestion().getQuestion());
 		this.server.sendToAll(this.users, tuple);
@@ -220,8 +226,9 @@ Tuple tuple;
 	}
 	
 	public void requestChoices(){
-		this.usersRequests++;
-		if(this.usersRequests>=this.users.size()){
+		this.choiceRequests++;
+		System.out.println(choiceRequests + " " + this.users.size()); 
+		if(this.choiceRequests>=this.users.size()){
 		Tuple tuple = new Tuple(Tuple.CHOICES);
 		tuple.put(getListOfAnswers());
 		server.sendToAll(this.users, tuple);
