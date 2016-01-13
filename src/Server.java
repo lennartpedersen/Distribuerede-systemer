@@ -136,9 +136,16 @@ public class Server {
 	public void chooseAnswer(User user, int choice) throws Exception { //User chooses an answer they believe is the correct answer.
 		Game game = user.getGame();
 		if (game == null)
-			throw new Exception("You must join a game before you can be choose an answer.");
+			throw new Exception("You must join a game before you can choose an answer.");
 		String answer = game.getListOfAnswers().get(choice);
 		game.addChoice(user, answer);
+	}
+	
+	public void addAnswer(User user, String answer) throws Exception { //User gives an answer to the current question.
+		Game game = user.getGame();
+		if (game == null)
+			throw new Exception("You must join a game before you can give an answer.");
+		game.addAnswer(user, answer);
 	}
 	
 	public void sendToAll(List<User> list, Tuple data){ //Send the given data to all users on the given list.
@@ -177,7 +184,6 @@ public class Server {
 		public void run() { //Decode command object and perform necessary tasks.
 			while (readData()){ //Read Command object from inputstream. Decode command only if data reading is successful.
 				//Decode Commmand object and perform task.
-				
 				try {
 					String name;
 					switch (task.getCommand()){ //Decode command switch
@@ -188,6 +194,9 @@ public class Server {
 								addUser(user, this);
 								sendStatus("User created.");
 							}
+							
+							System.out.println("Got user: "+name+ " Number of current threads: "+threadlist.size()+" Number of users: "+clientList.size()); //TODO Testing, remove later.
+							
 							break;
 						case Tuple.REQUESTNEWGAME: //Creates a new game
 							name = (String) task.get(0);
@@ -196,19 +205,41 @@ public class Server {
 							List<Question> questions = questionsDatabase.getQuestions(length);
 							newGame(name, questions, size);
 							sendStatus("Game created.");
+							
+							System.out.println("Got game: "+ name + " size: "+ size + " length: "+length+ " Number of active games: "+gameList.size()); //TODO Testing, remove later.
+							
 							break;
 						case Tuple.JOINGAME: //Add user to an active game
 							name = (String) task.get(0);
 							addUserToGame(name, user);
 							sendStatus("Joined game.");
+							
+							System.out.println("Current active game for "+user.getName()+": "+(user.getGame().users.contains(user) && gameList.get(name).users.contains(user))+" "+user.getGame()+" == "+gameList.get(name)); //TODO Testing, remove later.
+							
 							break;
 						case Tuple.REQUESTSTARTGAME:
 							requestStartGame(user);
 							sendStatus("Start requested.");
+							
+							System.out.println("Start game request from: "+user.getName()+" "+user.getGame().usersRequestingStart.contains(user)); //TODO Testing. remove later.
+							
 							break;
 						case Tuple.CHOOSE:
-							int answer = (int) task.get(0);
-							chooseAnswer(user, answer);
+							int choice = (int) task.get(0);
+							chooseAnswer(user, choice);
+							
+							System.out.println("Answer from user "+user.getName()+" received: "+choice+" Answer choosen: "+user.getGame().getListOfAnswers().get(choice)); //TODO Testing. remove later.
+							
+							break;
+						case Tuple.ANSWER:
+							String answer = (String) task.get(0);
+							addAnswer(user, answer);
+							
+							System.out.println(user.getName()+" gives answer: "+answer+" "+user.getGame().getListOfAnswers().contains(answer)); //TODO Testing. remove later.
+							
+							break;
+						case Tuple.QUESTION:
+							
 							break;
 							//Add new command here.
 							/*
@@ -218,6 +249,7 @@ public class Server {
 							 */
 						default:
 							System.err.println("You are an idiot Thomas. You forgot a command! Unknown Command. Closed connection.");
+							System.err.println("You got command: "+task.getCommand());
 							close();
 							break;
 					}
@@ -235,9 +267,9 @@ public class Server {
 			sendData(tuple);
 		}
 		
-		public boolean sendData(Object object){ //Sends object to connected client.
+		public boolean sendData(Tuple tuple){ //Sends tuple to connected client.
 			try {
-				sOutput.writeObject(object);
+				sOutput.writeObject(tuple);
 				return true;
 			} catch (IOException e) {
 				System.err.println("Error sending data to client.");
@@ -271,6 +303,8 @@ public class Server {
 				if (socket != null) socket.close();
 			} catch (IOException e) {}
 			removeUser(user);
+			System.err.println("Connection to client closed.");
+			System.out.println("Number of current threads: "+threadlist.size()+" Number of users: "+clientList.size()); //TODO Testing, remove later.
 		}
 	}
 }

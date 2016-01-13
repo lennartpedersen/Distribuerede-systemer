@@ -46,26 +46,25 @@ public class Client  {
 				
 				while (gameStarted) {
 					// Get question from server
-					//client.read(question());
+					client.read(question());
 					listenFromServer();
 
 					// Answer question
-					// System.out.println("Enter answer:"); send from server pls
+					System.out.println("Enter answer:");
 					String answer = scan.readLine();
 					client.put(answer(answer));
 
 					// Get choices from server
-					//client.read(choices());
+					client.read(choices());
 					listenFromServer();
 
 					// Pick choice
-					// System.out.println("Choose an answer by its index:");
-					// send from server pls
+					System.out.println("Choose an answer by its index:");
 					int choice = getInteger();
 					client.put(choose(choice));
 
 					// If game is done, set gameStarted to false
-					//client.read(phase());
+					client.read(phase());
 					listenFromServer();
 
 				}
@@ -178,6 +177,7 @@ public class Client  {
 		}
 	}
 	
+	@SuppressWarnings("unchecked")
 	private void listenFromServer() {
 		try {
 			Tuple tuple = (Tuple) sInput.readObject();
@@ -188,10 +188,10 @@ public class Client  {
 				System.out.println((String) tuple.get(0));
 				break;
 			case Tuple.QUESTION: // Server returns the question
-				System.out.println(tuple.get(0));
+				System.out.println(((Question) tuple.get(0)).getQuestion());
 				break;
 			case Tuple.CHOICES: // Server returns choices as List<String>
-				printChoices((List<?>) tuple.get(0));
+				printChoices((List<String>) tuple.get(0));
 				break;
 			case Tuple.PHASE: // Server returns the game's phase
 				int phase = (int) tuple.get(0);
@@ -199,7 +199,7 @@ public class Client  {
 					gameStarted = false;
 				break;
 			case Tuple.SCORES: // Server returns scores as HashMap<User, Integer>
-				printScores((HashMap<?, ?>) tuple.get(0));
+				printScores((HashMap<User, Integer>) tuple.get(0));
 				break;
 			}
 		}

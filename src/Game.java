@@ -22,8 +22,8 @@ public class Game {
 	private Server server;
 	private Iterator<Question> iterator;
 	private Question currentQuestion;
-	private List<User> users;
-	private List<User> usersRequestingStart;
+	public List<User> users;
+	public List<User> usersRequestingStart;
 	private List<Question> questionList;
 	private List<Score> scores;
 	private HashMap<String, User> answers;
@@ -214,7 +214,8 @@ public class Game {
 	}
 
 	private void incrementScore(User user, int score) {
-		scores.put(user, scores.get(user) + score);
+		int index = users.indexOf(user);
+		scores.add(new Score(users.get(index), scores.remove(index).getValue()+0));
 	}
 
 	private boolean isStarted() {

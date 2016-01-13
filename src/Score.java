@@ -2,6 +2,7 @@ import java.io.Serializable;
 
 public class Score implements Serializable{
 
+	private static final long serialVersionUID = 1381221520063759524L;
 	private User user;
 	private int value;
 	
