@@ -40,7 +40,7 @@ public class Client  {
 			//create reader for messages from user
 			scan = new BufferedReader(new InputStreamReader(System.in));
 			
-			startLoginPhase();
+			loginPhase();
 			
 			while (true) {
 				
@@ -68,6 +68,7 @@ public class Client  {
 
 					// Answer question
 					String answer = "";
+					
 					while (!hasAnswer) {
 						try {
 							answer = scan.readLine();
@@ -77,7 +78,7 @@ public class Client  {
 							System.out.println("Error reading line.");
 						} catch (Exception e) {
 							System.out.println(e.getMessage());
-							
+							answer = getNewAnswer(answer);
 						}
 					}
 					
@@ -132,7 +133,7 @@ public class Client  {
 		}
 	}
 	
-	private void startLoginPhase() {
+	private void loginPhase() {
 		System.out.println("Login - enter username: ");
 		String name;
 		boolean userLoggedIn = false;
@@ -151,7 +152,6 @@ public class Client  {
 	
 	private void optionPhase() {
 		boolean hasOption = false, 
-				hasGameName = false, 
 				hasRequestedNewGame = false, 
 				hasJoinedGame = false, 
 				hasRequestedStartGame = false;
@@ -170,19 +170,11 @@ public class Client  {
 			}
 		}
 
-		String gameName = "";
+		System.out.println("Write the name of the game:");
+		String gameName = getGameName();
 		int gameSize = 0;
 		int gameLength = 0;
 
-		System.out.println("Write the name of the game:");
-		while (!hasGameName) {
-			try {
-				gameName = scan.readLine().toLowerCase();
-				hasGameName = true;
-			} catch (IOException e) {
-				System.out.println("Incorrect input. Try again.");
-			}
-		}
 
 		if (option.equals("host game")) {
 			System.out.println("Write the maximum number of players:");
@@ -196,6 +188,8 @@ public class Client  {
 					hasRequestedNewGame = true;
 				} catch (Exception e) {
 					System.out.println(e.getMessage());
+					System.out.println("Write new game name:");
+					gameName = getGameName();
 				}
 			}
 		}
@@ -220,13 +214,50 @@ public class Client  {
 					client.read(requestStartGame());
 					hasRequestedStartGame = true;
 				} else
-					System.out.println("Input not correct. To begin game enter: Start");
+					System.out.println("Incorrect input. To begin game enter: Start");
 			} catch (IOException e) {
 				System.out.println("Incorrect input. Try again.");
 			} catch (Exception e) {
 				System.out.println(e.getMessage());
 			}
 		}
+	}
+	
+	private String getGameName() {
+		boolean hasGameName = false;
+		String gameName = "";
+		
+		while (!hasGameName) {
+			try {
+				gameName = scan.readLine().toLowerCase();
+				hasGameName = true;
+			} catch (IOException e) {
+				System.out.println("Incorrect input. Try again.");
+			}
+		}
+		return gameName;
+	}
+	
+	private String getNewAnswer(String answer) {
+		boolean hasNewAnswer = false;
+		String newAnswer = "";
+		
+		while (!hasNewAnswer) {
+			try {
+				newAnswer = scan.readLine();
+				if (newAnswer.contains(answer) || answer.contains(newAnswer))
+					System.out.println("Write an incorrect answer.");
+				else {
+					client.read(answer(newAnswer));
+					hasNewAnswer = true;
+				}
+			} catch (IOException e) {
+				System.out.println("Error reading line.");
+			} catch (Exception e) {
+				System.out.println(e.getMessage());
+			}
+		}
+		return newAnswer;
 	}
 	
 	private int getInteger() {
@@ -238,7 +269,10 @@ public class Client  {
 			try {
 				readline = scan.readLine();
 				integer = Integer.parseInt(readline);
-				isInt = true;
+				if (integer < 0)
+					System.out.println("Number entered is negative.");
+				else
+					isInt = true;
 			} catch (IOException e2) {
 				System.out.println("Error reading line.");
 			} catch (NumberFormatException e) {

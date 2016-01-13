@@ -177,7 +177,7 @@ public class Server {
 		ObjectInputStream sInput; //input from client
 		ObjectOutputStream sOutput; //output to client
 		User user;
-		Tuple task; //current task
+		Tuple tuple; //current task
 
 		//Constructor
 		ClientThread(Socket socket) {
@@ -201,9 +201,9 @@ public class Server {
 				
 				try {
 					String name;
-					switch (task.getCommand()){ //Decode command switch
+					switch (tuple.getCommand()){ //Decode command switch
 						case Tuple.LOGIN:
-							name = (String) task.get(0);
+							name = (String) tuple.get(0);
 							if (isUserAllowed(name)) {
 								user = new User(name);
 								addUser(user, this);
@@ -211,15 +211,15 @@ public class Server {
 							}
 							break;
 						case Tuple.REQUESTNEWGAME: //Creates a new game
-							name = (String) task.get(0);
-							int size = (int) task.get(1);
-							int length = (int) task.get(2);
+							name = (String) tuple.get(0);
+							int size = (int) tuple.get(1);
+							int length = (int) tuple.get(2);
 							List<Question> questions = questionsDatabase.getQuestions(length);
 							newGame(name, questions, size);
 							sendStatus("Game created.");
 							break;
 						case Tuple.JOINGAME: //Add user to an active game
-							name = (String) task.get(0);
+							name = (String) tuple.get(0);
 							addUserToGame(name, user);
 							sendStatus("Joined game.");
 							break;
@@ -228,11 +228,11 @@ public class Server {
 							sendStatus("Start requested.");
 							break;
 						case Tuple.CHOOSE:
-							int choice = (int) task.get(0);
+							int choice = (int) tuple.get(0);
 							chooseAnswer(user, choice);
 							break;
 						case Tuple.ANSWER:
-							String answer = (String) task.get(0);
+							String answer = (String) tuple.get(0);
 							addAnswer(user, answer);
 							sendStatus("Answer recieved.");
 							break;
@@ -282,7 +282,7 @@ public class Server {
 		
 		public boolean readData(){ //Reads object from connected client.
 			try {
-				task = (Tuple) sInput.readObject();
+				tuple = (Tuple) sInput.readObject();
 				return true;
 			} catch (ClassNotFoundException e) {
 				System.err.println("Invalid data from client '"+socket.getInetAddress()+"', connection closed.");
