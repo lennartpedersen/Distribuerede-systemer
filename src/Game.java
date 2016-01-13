@@ -18,8 +18,10 @@ public class Game {
 	private int gameSize;
 	private int gameRound;
 
-	private int usersRequests;
-	private int numOfAnswers;
+	private int startRequests;
+	private int questionRequests;
+	private int choiceRequests;
+
 
 	private Server server;
 	private Iterator<Question> iterator;
@@ -27,25 +29,31 @@ public class Game {
 	private List<User> users;
 	private List<Question> questionList;
 
+	private List<String> listOfAnswers ;
 	private HashMap<User, Integer> scoresIndexMap;
 	private List<Score> scores;
 	private HashMap<String, User> answers;
 	private HashMap<User, String> choices;
+	private int numOfAnswers;
+	private int choiceCounter;
 
 	public Game(Server server, List<Question> questions, int gameSize) {
-		this.phase = -1;
-		this.gameRound = 1;
-		this.numOfAnswers = 0;
+		phase = -1;
+		gameRound = 1;
+		numOfAnswers = 0;
 		this.server = server;
 		this.gameSize = gameSize;
-		this.users = new ArrayList<User>();
-		this.usersRequests = 0;
+		users = new ArrayList<User>();
+		startRequests = 0;
+		questionRequests = 0;
+		choiceRequests = 0;
+		choiceCounter=0;
 
 		this.questionList = questions;
-		this.currentQuestion = questionList.get(0);
+		currentQuestion = questionList.get(0);
 		iterator = questionList.iterator();
 
-		this.scores = new ArrayList<Score>();
+		scores = new ArrayList<Score>();
 		for (User user : users) {
 			scores.add(new Score(users.get(users.indexOf(user)), 0));
 		}
@@ -55,77 +63,45 @@ public class Game {
 		scoresIndexMap = new HashMap<>();
 	}
 
-	private void nextPhase() throws Exception {
-Tuple tuple;
-				switch (phase) {
+	private void newRound() throws Exception {
+		if (iterator.hasNext()) {
+			currentQuestion = iterator.next();
+			numOfAnswers = 0;
+			choiceCounter=0;
+			answers.clear();
+			choices.clear();
+			questionRequests=0;
+			choiceRequests=0;
+		} else {
+			throw new Exception("Error : Game had more rounds than amount of questions.");
+		}
+	}
 
-		case 0:
-			// Phase 0 - Next round, Set next Question as current question,
-			// reset
-			break;
+	public void addChoice(User user, String choice) throws Exception {
+			choices.put(user, choice);
+			choiceCounter++;
+			// if all users have given their choice, go to the next phase
 
-		case 1:
-			// Phase 1 - All users have send their answers. These have
-			// been
-			// stored and scores evaluated.
-			// Send the list of answers to all users for the Choosing Phase.
-			// send list of answers to server
-			break;
-
-		case 2:
-			// Phase 2 - All users have given their choice. These have
-			// been
-			// stored and scores need to be evaluated.
-			// Info on scores and positioning needs to be send to all users.
+			if (choice.equals(currentQuestion.getAnswer()))
+				incrementScore(user, 2);
+			if(choiceCounter>=users.size()){
 			evalateTotalScore();
-
-			tuple = new Tuple(Tuple.SCORES);
-
-			// Create lists of scores and users and sort both
-			Collections.sort(this.scores, new Comparator<Score>() {
-
-				@Override
-				public int compare(Score s1, Score s2) {
-					// TODO Auto-generated method stub
-					return s1.getValue() - s2.getValue();
-				}
-
-			});
-
-			// send score info and positions to server
-			tuple.put(users);
-			tuple.put(scores);
-			server.sendToAll(this.users, tuple);
-
-			// if last round
-			if (gameRound >= questionList.size()) {
-				// end game
-			} else {
-				gameRound++;
-
+			newRound();;
 			}
+			
+		}
+	
+	public void addUser(User user) throws Exception {
+		if (users.size() < gameSize) {
+			users.add(user);
+			scoresIndexMap.put(user, scores.size());
+			scores.add(scores.size(), new Score(user, 0));
 
-			nextPhase();
-			break;
-		default:
-			throw new Exception("Error : Invalid Game Phase.");
+		} else {
+			throw new Exception("Game is full, Tried to add new player to full game");
 		}
 	}
-
-	private void evalateTotalScore() {
-		Iterator<Entry<String, User>> answersIterator = this.answers.entrySet().iterator();
-		Iterator<Entry<User, String>> choicesIterator = this.choices.entrySet().iterator();
-		while (answersIterator.hasNext()) {
-			HashMap.Entry<String, User> answersPair = (Entry<String, User>) answersIterator.next();
-			HashMap.Entry<User, String> choicesPair = (Entry<User, String>) choicesIterator.next();
-			while (choicesIterator.hasNext()) {
-				// if answer was chosen, award points to associated user
-				if (answersPair.getKey().equals(choicesPair.getValue()))
-					incrementScore((User) answersPair.getValue(), 1);
-			}
-		}
-	}
-
+	
 	public void addAnswer(User user, String answer) throws Exception {
 	
 			// if correct answer
@@ -136,62 +112,14 @@ Tuple tuple;
 				throw new Exception("Correct answer, Provide incorrect answer");
 
 			} else {
-				this.answers.put(answer, user);
-				this.numOfAnswers++;
-
+				answers.put(answer, user);
+				numOfAnswers++;
+				if(numOfAnswers>=users.size())
+					generateAnswerList();
 			}
-			
-			// if all users have send their answers, begin next phase
-			if (this.numOfAnswers >= this.users.size())
-				this.usersRequests=0;
-	}
-
-	// make work
-	public void addChoice(User user, String choice) throws Exception {
-			this.choices.put(user, choice);
-			// if all users have given their choice, go to the next phase
-
-			if (choice.equals(currentQuestion.getAnswer()))
-				incrementScore(user, 2);
-
-			if (this.choices.size() >= this.users.size())
-				usersRequests=0;
 		}
-	
-	public void addUser(User user) throws Exception {
-		if (this.users.size() < gameSize) {
-			this.users.add(user);
-			this.scoresIndexMap.put(user, scores.size());
-			this.scores.add(scores.size(), new Score(user, 0));
 
-		} else {
-			throw new Exception("Game is full, Tried to add new player to full game");
-		}
-	}
-
-	public void requestStartGame() throws Exception {
-			this.usersRequests++;
-			if (this.usersRequests >= this.users.size())
-				newRound();
-	}
-
-	private void newRound() throws Exception {
-		if (iterator.hasNext()) {
-			this.currentQuestion = questionList.get(0);
-			this.numOfAnswers = 0;
-			this.answers.clear();
-			this.choices.clear();
-			this.usersRequests=0;
-		} else {
-			throw new Exception("Error : Game had more rounds than amount of questions.");
-		}
-	}
-
-	private void incrementScore(User user, int score) {
-		scores.get(scoresIndexMap.get(user)).incrementValue(score);
-	}
-
-	public boolean answerCheck(String userAnswer) {
+	private boolean answerCheck(String userAnswer) {
 		String uAnswer = userAnswer.toLowerCase(), 
 				cAnswer = currentQuestion.getAnswer().toLowerCase();
 
@@ -199,36 +127,83 @@ Tuple tuple;
 		
 	}
 
-	public List<String> getListOfAnswers() {
-		List<String> listOfAnswers = new ArrayList<String>();
-		Iterator<Entry<String, User>> answersIterator = this.answers.entrySet().iterator();
+	private void evalateTotalScore() {
+		
+		Iterator<Entry<String, User>> answersIterator = answers.entrySet().iterator();
+		Iterator<Entry<User, String>> choicesIterator = choices.entrySet().iterator();
+		while (answersIterator.hasNext()) {
+			HashMap.Entry<String, User> answersPair = (Entry<String, User>) answersIterator.next();
+			HashMap.Entry<User, String> choicesPair = (Entry<User, String>) choicesIterator.next();
+			while (choicesIterator.hasNext()) {
+				// if answer was chosen, award points to associated user
+				if (answersPair.getKey().equals(choicesPair.getValue()))
+					incrementScore((User) answersPair.getValue(), 1);
+			}
+		}
+
+		Collections.sort(scores, new Comparator<Score>() {
+			
+			@Override
+			public int compare(Score s1, Score s2) {
+				return s1.getValue() - s2.getValue();
+			}
+		});
+
+	}
+
+	private void generateAnswerList() {
+		listOfAnswers = new ArrayList<String>();
+		Iterator<Entry<String, User>> answersIterator = answers.entrySet().iterator();
 		while (answersIterator.hasNext()) {
 			HashMap.Entry<String, User> answerPair = (Entry<String, User>) answersIterator.next();
 			listOfAnswers.add(answerPair.getKey());
 		}
 		listOfAnswers.add(new Random().nextInt(listOfAnswers.size()),getCurrentQuestion().getAnswer());
-		return listOfAnswers;
+	}
+
+	private void incrementScore(User user, int score) {
+		scores.get(scoresIndexMap.get(user)).incrementValue(score);
+	}
+
+	public void requestStartGame() throws Exception {
+			startRequests++;
+			System.out.println(startRequests + " " + users.size()); 
 	}
 
 	public void requestQuestion() {
-		this.usersRequests++;
-		if(this.usersRequests>=this.users.size()){
+		questionRequests++;
+		System.out.println(questionRequests + " " + users.size()); 
+		
+		if(questionRequests>=users.size()){		
 		Tuple tuple = new Tuple(Tuple.QUESTION);
 		tuple.put(getCurrentQuestion().getQuestion());
-		this.server.sendToAll(this.users, tuple);
+		server.sendToAll(users, tuple);
 		}
 	}
 	
 	public void requestChoices(){
-		this.usersRequests++;
-		if(this.usersRequests>=this.users.size()){
+		choiceRequests++;
+		System.out.println(choiceRequests + " " + users.size()); 
+		if(choiceRequests>=users.size()){
 		Tuple tuple = new Tuple(Tuple.CHOICES);
 		tuple.put(getListOfAnswers());
-		server.sendToAll(this.users, tuple);
+		server.sendToAll(users, tuple);
 		}
+	}
+	
+	public void requestScores(){
+		Tuple	tuple = new Tuple(Tuple.SCORES);
+		tuple.put(users);
+		tuple.put(scores);
+		server.sendToAll(users, tuple);
+
+	}
+
+	public List<String> getListOfAnswers() {
+		return listOfAnswers;
 	}
 
 	private Question getCurrentQuestion() {
-		return this.currentQuestion;
+		return currentQuestion;
 	}
 }
