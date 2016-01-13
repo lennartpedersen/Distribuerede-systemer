@@ -55,6 +55,9 @@ public class Client  {
 
 					// Get choices from server
 					client.read(choices());
+					client.listenFromServer();
+					client.listenFromServer();
+					client.listenFromServer();
 
 					// Pick choice
 					System.out.println("Choose an answer by its number:");
@@ -176,12 +179,14 @@ public class Client  {
 		try {
 			Tuple tuple = (Tuple) sInput.readObject();
 			
+			System.out.println("Received Tuple: "+tuple.getCommand()); //TODO Testing. Remove later.
+			
 			switch (tuple.getCommand()) {
 			case Tuple.ERROR:
 				System.out.println(((Exception) tuple.get(0)).getMessage());
 				break;
 			case Tuple.QUESTION: // Server returns the question
-				System.out.println((String) tuple.get(0));
+				System.out.println(((Question) tuple.get(0)).getQuestion());
 				break;
 			case Tuple.CHOICES: // Server returns choices as List<String>
 				printChoices((List<String>) tuple.get(0));
@@ -207,15 +212,15 @@ public class Client  {
 	
 	private void printChoices(List<String> choices) {
 		int i = 0;
-		for (Object choice : choices) {
+		for (String choice : choices) {
 			System.out.println(++i + ": " + choice);
 		}
 	}
 
-	private void printScores(HashMap<?, ?> hashMap) {
+	private void printScores(HashMap<User, Integer> hashMap) {
 		System.out.println("Users with their corresponding score:");
-		for (Map.Entry<?, ?> user : hashMap.entrySet()) 
-			System.out.println(((User) user).getName() + " " + (int) user.getValue());
+		for (Map.Entry<User, Integer> user : hashMap.entrySet()) 
+			System.out.println(user.getKey().getName() + " " + user.getValue());
 	}
 
 	private Tuple login(String name) {

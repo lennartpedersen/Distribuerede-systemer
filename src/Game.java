@@ -66,6 +66,8 @@ public class Game {
 		phaseTuple.put(this.phase);
 		server.sendToAll(users, phaseTuple);
 
+		System.out.println("Phase change: "+phase); //TODO Testing. remove later.
+		
 		Tuple tuple;
 			switch (phase) {
 
@@ -94,7 +96,7 @@ public class Game {
 			// Send the list of answers to all users for the Choosing Phase.
 			tuple = new Tuple(8);
 			tuple.put(getListOfAnswers());
-			server.sendToAll(this.users, tuple);
+			this.server.sendToAll(this.users, tuple);
 			// send list of answers to server
 			break;
 
@@ -121,7 +123,7 @@ public class Game {
 			// send score info and positions to server
 			tuple.put(users);
 			tuple.put(scores);
-			server.sendToAll(this.users, tuple);
+			this.server.sendToAll(this.users, tuple);
 		
 			// if last round
 			if (gameRound >= questionList.size()) {

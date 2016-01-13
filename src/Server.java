@@ -247,16 +247,22 @@ public class Server {
 							System.out.println(user.getName()+" gives answer: "+answer+" "+user.getGame().getListOfAnswers().contains(answer)); //TODO Testing. remove later.
 							
 							break;
-						case Tuple.QUESTION: //Sends current question to client.
-							Tuple tuple = new Tuple(Tuple.QUESTION);
-							Question question = getQuestion(user);
-							tuple.put(question);
-							sendData(tuple);
+						case Tuple.QUESTION: //Sends current question in active game to client. HANDLED BY GAME.
+							//Tuple tuple = new Tuple(Tuple.QUESTION);
+							//Question question = getQuestion(user);
+							//tuple.put(question);
+							//sendData(tuple);
 							
-							System.out.println("Question '"+question.getQuestion()+"' send to "+user.getName()); //TODO Testing. remove later.
+							//System.out.println("Question '"+question.getQuestion()+"' send to "+user.getName()); //TODO Testing. remove later.
 							
 							break;
-						case Tuple.CHOICES: //Send choices to client. HANDLED BY GAME.
+						case Tuple.CHOICES: //Send choices in active game to client. HANDLED BY GAME.
+							
+							break;
+						case Tuple.PHASE: //Send current phase of the active game. HANDLED BY GAME.
+							
+							break;
+						case Tuple.SCORES: //Send the current score of active game. HANDLED BY GAME.
 							
 							break;
 							//Add new command here.
@@ -289,6 +295,7 @@ public class Server {
 		
 		public boolean sendData(Tuple tuple){ //Sends tuple to connected client.
 			try {
+				System.out.println("Sending data to "+user.getName()+" Command: "+tuple.getCommand()); //TODO TEsting. Remove later.
 				sOutput.writeObject(tuple);
 				return true;
 			} catch (IOException e) {
