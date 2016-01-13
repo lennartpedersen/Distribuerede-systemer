@@ -272,18 +272,21 @@ public class Client  {
 		}
 	}
 	
+	@SuppressWarnings("unchecked")
 	private void listenFromServer() throws Exception {
 		try {
 			Tuple tuple = (Tuple) sInput.readObject();
+			
+			System.out.println("Received Tuple: "+tuple.getCommand()); //TODO Testing. Remove later.
 			
 			switch (tuple.getCommand()) {
 			case Tuple.ERROR:
 				throw ((Exception) tuple.get(0));
 			case Tuple.QUESTION: // Server returns the question
-				System.out.println((String) tuple.get(0));
+				System.out.println(((Question) tuple.get(0)).getQuestion());
 				break;
 			case Tuple.CHOICES: // Server returns choices as List<String>
-				printChoices((List<?>) tuple.get(0));
+				printChoices((List<String>) tuple.get(0));
 				break;
 			case Tuple.PHASE: // Server returns the game's phase
 				int phase = (int) tuple.get(0);
@@ -291,7 +294,7 @@ public class Client  {
 					gameStarted = false;
 				break;
 			case Tuple.SCORES: // Server returns scores as HashMap<User, Integer>
-				printScores((HashMap<?, ?>) tuple.get(0));
+				printScores((HashMap<User, Integer>) tuple.get(0));
 				break;
 			default:
 				System.out.println((String) tuple.get(0));
@@ -304,18 +307,18 @@ public class Client  {
 		catch(ClassNotFoundException e2) {}
 	}
 	
-	private void printChoices(List<?> choices) {
+	private void printChoices(List<String> choices) {
 		int i = 0;
-		for (Object choice : choices) {
-			System.out.println(++i + ": " + (String) choice);
+		for (String choice : choices) {
+			System.out.println(++i + ": " + choice);
 		}
 		players = choices.size();
 	}
 
-	private void printScores(HashMap<?, ?> hashMap) {
+	private void printScores(HashMap<User, Integer> hashMap) {
 		System.out.println("Users with their corresponding score:");
-		for (Map.Entry<?, ?> user : hashMap.entrySet()) 
-			System.out.println(((User) user).getName() + " " + (int) user.getValue());
+		for (Map.Entry<User, Integer> user : hashMap.entrySet()) 
+			System.out.println(user.getKey().getName() + " " + user.getValue());
 	}
 
 	private Tuple login(String name) {

@@ -1,5 +1,9 @@
+import java.io.Serializable;
 
-public class User {
+public class User implements Serializable {
+	
+	private static final long serialVersionUID = -7730630657091260564L;
+	
 	private String name;
 	private Game game;
 	private boolean spectator;

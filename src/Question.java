@@ -1,6 +1,9 @@
 import java.io.Serializable;
 
 public class Question implements Serializable{
+
+	private static final long serialVersionUID = 7584983293412403367L;
+	
 	private String question, answer;
 	
 	public Question(String question, String answer) {

@@ -23,7 +23,7 @@ public class Game {
 	private Server server;
 	private Iterator<Question> iterator;
 	private Question currentQuestion;
-	private List<User> users;
+	public List<User> users;
 	private List<Question> questionList;
 
 	private HashMap<User, Integer> scoresIndexMap;
@@ -67,6 +67,8 @@ public class Game {
 		phaseTuple.put(this.phase);
 		server.sendToAll(users, phaseTuple);
 
+		System.out.println("Phase change: "+phase); //TODO Testing. remove later.
+		
 		Tuple tuple;
 		switch (phase) {
 
@@ -116,7 +118,7 @@ public class Game {
 			// send score info and positions to server
 			tuple.put(users);
 			tuple.put(scores);
-			server.sendToAll(this.users, tuple);
+			this.server.sendToAll(this.users, tuple);
 
 			// if last round
 			if (gameRound >= questionList.size()) {
@@ -251,7 +253,7 @@ public class Game {
 		}
 	}
 
-	private Question getCurrentQuestion() {
+	Question getCurrentQuestion() {
 		return this.currentQuestion;
 	}
 }

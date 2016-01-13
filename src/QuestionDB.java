@@ -29,8 +29,8 @@ public class QuestionDB {
 		int count = 0, randomNumber = 0;
 		
 		List<Question> qaList = new ArrayList<Question>(quantity);
-		File qFile = new File("Questions.txt"), 
-			 aFile = new File("Answers.txt");
+		File qFile = new File(QuestionDB.class.getResource("Questions.txt").getPath()), 
+			 aFile = new File(QuestionDB.class.getResource("Answers.txt").getPath());
 		String qLine = null, aLine = null;
         BufferedReader qIn, aIn;
         
