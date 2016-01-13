@@ -126,13 +126,6 @@ public class Server {
 		user.setGame(game);
 	}
 	
-	public void requestStartGame(User user) throws Exception { //Request the start of the game tied to given user.
-		Game game = user.getGame();
-		if (game == null)
-			throw new Exception("You must join a game before you can be ready.");
-		game.addRequest(user);
-	}
-	
 	public void chooseAnswer(User user, int choice) throws Exception { //User chooses an answer they believe is the correct answer.
 		Game game = user.getGame();
 		if (game == null)
@@ -148,6 +141,34 @@ public class Server {
 			if (thread != null)
 				thread.sendData(data);
 		}	
+	}
+	
+	public void requestStartGame(User user) throws Exception { //Request the start of the game tied to given user.
+		Game game = user.getGame();
+		if (game == null)
+			throw new Exception("You must join a game before you can be ready.");
+		game.requestStartGame();
+	}
+
+	public void requestQuestion(User user) {
+		Game game = user.getGame();
+		if (game == null)
+			throw new Exception("You must join a game before you can be choose an answer.");
+		game.requestQuestion();
+	}
+
+	public void requestChoices(User user) {
+		Game game = user.getGame();
+		if (game == null)
+			throw new Exception("You must join a game before you can be choose an answer.");
+		game.requestChoices();
+	}
+	
+	public void addAnswer(User user, String answer) throws Exception {
+		Game game = user.getGame();
+		if (game == null)
+			throw new Exception("You must join a game before you can be choose an answer.");
+		game.addAnswer(user, answer);
 	}
 	
 	class ClientThread extends Thread { //Threads used to perform tasks for individual clients
@@ -207,8 +228,19 @@ public class Server {
 							sendStatus("Start requested.");
 							break;
 						case Tuple.CHOOSE:
-							int answer = (int) task.get(0);
-							chooseAnswer(user, answer);
+							int choice = (int) task.get(0);
+							chooseAnswer(user, choice);
+							break;
+						case Tuple.ANSWER:
+							String answer = (String) task.get(0);
+							addAnswer(user, answer);
+							sendStatus("Answer recieved.");
+							break;
+						case Tuple.QUESTION:
+							requestQuestion(user);
+							break;
+						case Tuple.CHOICES:
+							requestChoices(user);
 							break;
 							//Add new command here.
 							/*
