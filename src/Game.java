@@ -5,6 +5,7 @@ import java.util.HashMap;
 import java.util.Iterator;
 import java.util.List;
 import java.util.Map.Entry;
+import java.util.Random;
 
 public class Game {
 
@@ -132,7 +133,7 @@ Tuple tuple;
 				incrementScore(user, 3);
 				
 				// user needs to give another answer
-				throw new Exception("Correct answer, Provide new answer");
+				throw new Exception("Correct answer, Provide incorrect answer");
 
 			} else {
 				this.answers.put(answer, user);
@@ -154,7 +155,7 @@ Tuple tuple;
 				incrementScore(user, 2);
 
 			if (this.choices.size() >= this.users.size())
-				nextPhase();
+				usersRequests=0;
 		}
 	
 	public void addUser(User user) throws Exception {
@@ -194,11 +195,9 @@ Tuple tuple;
 		String uAnswer = userAnswer.toLowerCase(), 
 				cAnswer = currentQuestion.getAnswer().toLowerCase();
 
-		// Add additional matching
+		return cAnswer.contains(uAnswer);
 		
-		return cAnswer.equals(uAnswer);
 	}
-
 
 	public List<String> getListOfAnswers() {
 		List<String> listOfAnswers = new ArrayList<String>();
@@ -207,6 +206,7 @@ Tuple tuple;
 			HashMap.Entry<String, User> answerPair = (Entry<String, User>) answersIterator.next();
 			listOfAnswers.add(answerPair.getKey());
 		}
+		listOfAnswers.add(new Random().nextInt(listOfAnswers.size()),getCurrentQuestion().getAnswer());
 		return listOfAnswers;
 	}
 
