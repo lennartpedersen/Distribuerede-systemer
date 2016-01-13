@@ -209,10 +209,10 @@ public class Client  {
 		catch(ClassNotFoundException e2) {}
 	}
 	
-	private void printChoices(List<?> choices) {
+	private void printChoices(List<String> choices) {
 		int i = 0;
 		for (Object choice : choices) {
-			System.out.println(++i + ": " + (String) choice);
+			System.out.println(++i + ": " + choice);
 		}
 	}
 

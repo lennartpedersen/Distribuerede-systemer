@@ -256,6 +256,9 @@ public class Server {
 							System.out.println("Question '"+question.getQuestion()+"' send to "+user.getName()); //TODO Testing. remove later.
 							
 							break;
+						case Tuple.CHOICES: //Send choices to client. HANDLED BY GAME.
+							
+							break;
 							//Add new command here.
 							/*
 						case "":
