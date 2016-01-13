@@ -91,9 +91,6 @@ public class Client  {
 							System.out.println(e.getMessage());
 						}
 					}
-					client.listenFromServer();
-					client.listenFromServer();
-					client.listenFromServer();
 
 					// Pick choice
 					System.out.println("Choose an answer by its number:");

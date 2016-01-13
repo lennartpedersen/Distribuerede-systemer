@@ -178,13 +178,6 @@ public class Server {
 		game.requestChoices();
 	}
 	
-	public void addAnswer(User user, String answer) throws Exception {
-		Game game = user.getGame();
-		if (game == null)
-			throw new Exception("You must join a game before you can be choose an answer.");
-		game.addAnswer(user, answer);
-	}
-	
 	class ClientThread extends Thread { //Threads used to perform tasks for individual clients
 		//Fields
 		Socket socket; //the client's connection
@@ -249,7 +242,7 @@ public class Server {
 							requestStartGame(user);
 							sendStatus("Start requested.");
 							
-							System.out.println("Start game request from: "+user.getName()+" "+user.getGame().usersRequestingStart.contains(user)); //TODO Testing. remove later.
+							System.out.println("Start game request from: "+user.getName()); //TODO Testing. remove later.
 							
 							break;
 						case Tuple.CHOOSE:

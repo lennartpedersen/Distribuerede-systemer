@@ -23,7 +23,7 @@ public class Game {
 	private Server server;
 	private Iterator<Question> iterator;
 	private Question currentQuestion;
-	private List<User> users;
+	public List<User> users;
 	private List<Question> questionList;
 
 	private HashMap<User, Integer> scoresIndexMap;
