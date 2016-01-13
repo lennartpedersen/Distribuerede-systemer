@@ -25,7 +25,7 @@ public class Client  {
 
 	//Constructor
 	public Client() throws UnknownHostException {
-		server = InetAddress.getByName("127.0.0.1");
+		server = InetAddress.getByName("10.16.170.153");
 	}
 	
 	//Methods
@@ -200,6 +200,8 @@ public class Client  {
 				hasJoinedGame = true;
 			} catch (Exception e) {
 				System.out.println(e.getMessage());
+				System.out.println("Write new game name:");
+				gameName = getGameName();
 			}
 		}
 		
