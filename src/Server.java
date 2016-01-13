@@ -272,7 +272,9 @@ public class Server {
 							break;
 					}
 				} catch (Exception e) {
-					sendStatus(e.getMessage());
+					Tuple tuple = new Tuple(Tuple.ERROR);
+					tuple.put(e);
+					sendData(tuple);
 				}
 			}
 			remove(this); //Removes this ClientThread from Server's threadlist.
@@ -280,7 +282,7 @@ public class Server {
 		}
 		
 		private void sendStatus(String status) {
-			Tuple tuple = new Tuple(Tuple.ERROR);
+			Tuple tuple = new Tuple(-1);
 			tuple.put(status);
 			sendData(tuple);
 		}
