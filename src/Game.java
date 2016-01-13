@@ -84,7 +84,7 @@ public class Game {
 			}
 			// send Question to users
 			tuple = new Tuple(Tuple.QUESTION);
-			tuple.put(getCurrentQuestion());
+			tuple.put(getCurrentQuestion().getQuestion());
 
 			this.server.sendToAll(this.users, tuple);
 			break;
