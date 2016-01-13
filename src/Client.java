@@ -6,6 +6,7 @@ import java.io.ObjectOutputStream;
 import java.net.InetAddress;
 import java.net.Socket;
 import java.net.UnknownHostException;
+import java.util.ArrayList;
 import java.util.HashMap;
 import java.util.List;
 import java.util.Map;
@@ -104,16 +105,12 @@ public class Client  {
 						else 
 							hasChoice = true;
 					}
-					client.put(choose(choice));
-
-					// If game is done, set gameStarted to false
-					while (!hasPhase) {
-						try {
-							client.read(phase());
-							hasPhase = true;
-						} catch (Exception e) {
-							System.out.println(e.getMessage());
-						}
+					
+					try{
+					//client.put(choose(choice));
+					}
+					catch (Exception e){
+					System.out.println(e.getMessage());
 					}
 					
 					while (!hasScores) {
@@ -124,9 +121,9 @@ public class Client  {
 							System.out.println(e.getMessage());
 						}
 					}
-					
+					break;
 				} // End while (gameStarted)
-				
+				break;
 			} // End while (true)
 			
 		} catch (IOException e) {
@@ -328,7 +325,7 @@ public class Client  {
 					gameStarted = false;
 				break;
 			case Tuple.SCORES: // Server returns scores as HashMap<User, Integer>
-				printScores((HashMap<?, ?>) tuple.get(0));
+				printScores((ArrayList<Score>) tuple.get(0));
 				break;
 			default:
 				System.out.println((String) tuple.get(0));
@@ -349,10 +346,11 @@ public class Client  {
 		players = choices.size();
 	}
 
-	private void printScores(HashMap<?, ?> hashMap) {
+	private void printScores(ArrayList<Score> scores) {
 		System.out.println("Users with their corresponding score:");
-		for (Map.Entry<?, ?> user : hashMap.entrySet()) 
-			System.out.println(((User) user).getName() + " " + (int) user.getValue());
+		for(int i=0; i<scores.size(); i++)
+			System.out.println(scores.get(i).getUser().getName() + " : " + scores.get(i).getValue());
+		
 	}
 
 	private Tuple login(String name) {
@@ -399,11 +397,6 @@ public class Client  {
 	
 	private Tuple choices() {
 		Tuple tuple = new Tuple(Tuple.CHOICES);
-		return tuple;
-	}
-	
-	private Tuple phase() {
-		Tuple tuple = new Tuple(Tuple.PHASE);
 		return tuple;
 	}
 	
