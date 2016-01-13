@@ -5,6 +5,7 @@ import java.util.HashMap;
 import java.util.Iterator;
 import java.util.List;
 import java.util.Map.Entry;
+import java.util.Random;
 
 public class Game {
 
@@ -55,33 +56,12 @@ public class Game {
 	}
 
 	private void nextPhase() throws Exception {
-
-		if (this.phase == -1) {
-			this.phase = 0;
-		} else {
-			this.phase = (phase % 3) + 1;
-		}
-
-		Tuple phaseTuple;
-		phaseTuple = new Tuple(Tuple.PHASE);
-		phaseTuple.put(this.phase);
-		server.sendToAll(users, phaseTuple);
-
-		Tuple tuple;
-		switch (phase) {
+Tuple tuple;
+				switch (phase) {
 
 		case 0:
 			// Phase 0 - Next round, Set next Question as current question,
 			// reset
-			if (iterator.hasNext()) {
-				this.currentQuestion = questionList.get(0);
-				this.numOfAnswers = 0;
-				this.answers.clear();
-				this.choices.clear();
-				this.usersRequests=0;
-			} else {
-				throw new Exception("Error : Game had more rounds than amount of questions.");
-			}
 			break;
 
 		case 1:
@@ -89,7 +69,6 @@ public class Game {
 			// been
 			// stored and scores evaluated.
 			// Send the list of answers to all users for the Choosing Phase.
-			this.usersRequests=0;
 			// send list of answers to server
 			break;
 
@@ -148,14 +127,13 @@ public class Game {
 	}
 
 	public void addAnswer(User user, String answer) throws Exception {
-		if (getPhase() == 0) {
-
+	
 			// if correct answer
 			if (answerCheck(answer)) {
 				incrementScore(user, 3);
 				
 				// user needs to give another answer
-				throw new Exception("Correct answer, Provide new answer");
+				throw new Exception("Correct answer, Provide incorrect answer");
 
 			} else {
 				this.answers.put(answer, user);
@@ -165,13 +143,11 @@ public class Game {
 			
 			// if all users have send their answers, begin next phase
 			if (this.numOfAnswers >= this.users.size())
-				nextPhase();
-		}
+				this.usersRequests=0;
 	}
 
 	// make work
 	public void addChoice(User user, String choice) throws Exception {
-		if (getPhase() == 1) {
 			this.choices.put(user, choice);
 			// if all users have given their choice, go to the next phase
 
@@ -179,10 +155,9 @@ public class Game {
 				incrementScore(user, 2);
 
 			if (this.choices.size() >= this.users.size())
-				nextPhase();
+				usersRequests=0;
 		}
-	}
-
+	
 	public void addUser(User user) throws Exception {
 		if (this.users.size() < gameSize) {
 			this.users.add(user);
@@ -195,10 +170,20 @@ public class Game {
 	}
 
 	public void requestStartGame() throws Exception {
-		if (!isStarted()) {
 			this.usersRequests++;
 			if (this.usersRequests >= this.users.size())
-				nextPhase();
+				newRound();
+	}
+
+	private void newRound() throws Exception {
+		if (iterator.hasNext()) {
+			this.currentQuestion = questionList.get(0);
+			this.numOfAnswers = 0;
+			this.answers.clear();
+			this.choices.clear();
+			this.usersRequests=0;
+		} else {
+			throw new Exception("Error : Game had more rounds than amount of questions.");
 		}
 	}
 
@@ -206,21 +191,12 @@ public class Game {
 		scores.get(scoresIndexMap.get(user)).incrementValue(score);
 	}
 
-	private boolean isStarted() {
-		return getPhase() >= 0;
-	}
-
 	public boolean answerCheck(String userAnswer) {
 		String uAnswer = userAnswer.toLowerCase(), 
 				cAnswer = currentQuestion.getAnswer().toLowerCase();
 
-		// Add additional matching
+		return cAnswer.contains(uAnswer);
 		
-		return cAnswer.equals(uAnswer);
-	}
-
-	private int getPhase() {
-		return this.phase;
 	}
 
 	public List<String> getListOfAnswers() {
@@ -230,6 +206,7 @@ public class Game {
 			HashMap.Entry<String, User> answerPair = (Entry<String, User>) answersIterator.next();
 			listOfAnswers.add(answerPair.getKey());
 		}
+		listOfAnswers.add(new Random().nextInt(listOfAnswers.size()),getCurrentQuestion().getAnswer());
 		return listOfAnswers;
 	}
 
