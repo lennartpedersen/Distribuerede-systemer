@@ -46,32 +46,27 @@ public class Client  {
 				
 				while (gameStarted) {
 					// Get question from server
-					//client.read(question());
-					listenFromServer();
+					client.read(question());
 
 					// Answer question
-					// System.out.println("Enter answer:"); send from server pls
+					System.out.println("Enter answer:"); //send from server pls
 					String answer = scan.readLine();
 					client.put(answer(answer));
 
 					// Get choices from server
-					//client.read(choices());
-					listenFromServer();
+					client.read(choices());
 
 					// Pick choice
-					// System.out.println("Choose an answer by its index:");
-					// send from server pls
+					System.out.println("Choose an answer by its number:");
 					int choice = getInteger();
 					client.put(choose(choice));
 
 					// If game is done, set gameStarted to false
-					//client.read(phase());
-					listenFromServer();
+					client.read(phase());
 
 				}
 				
 				client.read(scores());
-				listenFromServer();
 				
 			}
 			
@@ -114,12 +109,10 @@ public class Client  {
 				gameSize = getInteger();
 				System.out.println("Write the number of rounds:");
 				gameLength = getInteger();
-				client.put(requestNewGame(gameName, gameSize, gameLength));
-				listenFromServer();
+				client.read(requestNewGame(gameName, gameSize, gameLength));
 			}
 			
-			client.put(joinGame(gameName)); 
-			listenFromServer();
+			client.read(joinGame(gameName)); 
 			// Players can put a start-game request - if all players have
 			// requested this then the game starts.
 			System.out.println("When you are ready to begin the game please enter: Start");
@@ -129,8 +122,7 @@ public class Client  {
 				start = scan.readLine();
 			}
 			
-			client.put(requestStartGame());
-			listenFromServer();
+			client.read(requestStartGame());
 		} catch (IOException e) {
 			System.out.println("Error reading line.");
 		}
@@ -173,6 +165,7 @@ public class Client  {
 	private void read(Tuple tuple) { //For get-commands: get questions, get answers.
 		try {
 			sOutput.writeObject(tuple);
+			listenFromServer();
 		} catch (IOException e) {
 			e.printStackTrace();
 		}
@@ -181,14 +174,13 @@ public class Client  {
 	private void listenFromServer() {
 		try {
 			Tuple tuple = (Tuple) sInput.readObject();
-			//Analyze object and do task.
 			
 			switch (tuple.getCommand()) {
 			case Tuple.ERROR:
-				System.out.println((String) tuple.get(0));
+				System.out.println(((Exception) tuple.get(0)).getMessage());
 				break;
 			case Tuple.QUESTION: // Server returns the question
-				System.out.println(tuple.get(0));
+				System.out.println((String) tuple.get(0));
 				break;
 			case Tuple.CHOICES: // Server returns choices as List<String>
 				printChoices((List<?>) tuple.get(0));
@@ -200,6 +192,9 @@ public class Client  {
 				break;
 			case Tuple.SCORES: // Server returns scores as HashMap<User, Integer>
 				printScores((HashMap<?, ?>) tuple.get(0));
+				break;
+			default:
+				System.out.println((String) tuple.get(0));
 				break;
 			}
 		}
