@@ -25,6 +25,8 @@ public class Game {
 	private List<User> users;
 	private List<User> usersRequestingStart;
 	private List<Question> questionList;
+	
+	private HashMap<User, Integer> scoresIndexMap;
 	private List<Score> scores;
 	private HashMap<String, User> answers;
 	private HashMap<User, String> choices;
@@ -50,7 +52,7 @@ public class Game {
 
 		answers = new HashMap<>();
 		choices = new HashMap<>();
-
+		scoresIndexMap = new HashMap<>();
 	}
 
 	private void nextPhase() throws Exception {
@@ -62,7 +64,7 @@ public class Game {
 		}
 
 		Tuple phaseTuple;
-		phaseTuple = new Tuple(9);
+		phaseTuple = new Tuple(Tuple.PHASE);
 		phaseTuple.put(this.phase);
 		server.sendToAll(users, phaseTuple);
 
@@ -81,7 +83,7 @@ public class Game {
 				throw new Exception("Error : Game had more rounds than amount of questions.");
 			}
 			// send Question to users
-			tuple = new Tuple(6);
+			tuple = new Tuple(Tuple.QUESTION);
 			tuple.put(getCurrentQuestion());
 
 			this.server.sendToAll(this.users, tuple);
@@ -92,7 +94,7 @@ public class Game {
 			// been
 			// stored and scores evaluated.
 			// Send the list of answers to all users for the Choosing Phase.
-			tuple = new Tuple(8);
+			tuple = new Tuple(Tuple.CHOICES);
 			tuple.put(getListOfAnswers());
 			server.sendToAll(this.users, tuple);
 			// send list of answers to server
@@ -105,7 +107,7 @@ public class Game {
 			// Info on scores and positioning needs to be send to all users.
 			evalateTotalScore();
 
-			tuple = new Tuple(10);
+			tuple = new Tuple(Tuple.SCORES);
 
 			//Create lists of scores and users and sort both
 			Collections.sort(this.scores, new Comparator<Score>() {
@@ -129,10 +131,7 @@ public class Game {
 			} else {
 				gameRound++;
 
-				// spectators can now participate
-				for (User user : users)
-					user.setSpectator(false);
-			}
+				}
 
 			nextPhase();
 			break;
@@ -156,24 +155,25 @@ public class Game {
 	}
 
 	public void addAnswer(User user, String answer) throws Exception {
-		if (!user.isSpectator() && getPhase()==0){
+		if (getPhase()==0){
+			Tuple tuple = new Tuple(Tuple.ANSWER);
+			tuple.put(user);
 
 			// if correct answer
 			if (answerCheck(answer)) {
 				incrementScore(user, 3);
 				
 				// user needs to give another answer
-				Tuple tuple = new Tuple(11);
-				tuple.put(user);
-				server.sendToAll(this.users,tuple);
+				tuple.put(true);
 				
 			} else {
 				this.answers.put(answer, user);
 				this.numOfAnswers++;
+				tuple.put(false);
+				
 			}
-
-			// if all non spectator users have send their answers, begin next
-			// phase
+			server.sendToAll(this.users,tuple);
+			// if all users have send their answers, begin next phase
 			if (this.numOfAnswers >= this.eligableUsers)
 				nextPhase();
 		}
@@ -181,7 +181,7 @@ public class Game {
 
 	// make work
 	public void addChoice(User user, String choice) throws Exception {
-		if (!user.isSpectator() && getPhase()==1) {
+		if (getPhase()==1) {
 			this.choices.put(user, choice);
 			// if all users have given their choice, go to the next phase
 
@@ -196,10 +196,10 @@ public class Game {
 	public void addUser(User user) throws Exception {
 		if (this.users.size() < gameSize) {
 			this.users.add(user);
-			if (isStarted())
-				user.setSpectator(true);
-			else
-				eligableUsers++;
+			this.scoresIndexMap.put(user, scores.size());
+			this.scores.add(scores.size(), new Score(user,0));
+			
+			this.eligableUsers++;
 		} else {
 			throw new Exception("Game is full, Tried to add new player to full game");
 		}
@@ -214,7 +214,7 @@ public class Game {
 	}
 
 	private void incrementScore(User user, int score) {
-		scores.put(user, scores.get(user) + score);
+		scores.get(scoresIndexMap.get(user)).incrementValue(score);
 	}
 
 	private boolean isStarted() {

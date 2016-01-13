@@ -18,5 +18,10 @@ public class Score implements Serializable{
 		return value;
 	}
 	
+	public void incrementValue(int i){
+		value+=i;
+	}
+	
+	
 	
 }
