@@ -11,6 +11,7 @@ public class User {
 	public User(String name) {
 		this.name = name;
 		score = 0;
+		correct = false;
 	}
 
 	public String getName() {

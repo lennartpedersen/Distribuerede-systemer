@@ -246,8 +246,8 @@ public class Client  {
 		
 		while (!hasNewAnswer) {
 			try {
-				newAnswer = scan.readLine().toLowerCase();
-				if (newAnswer.contains(answer) || answer.contains(newAnswer))
+				newAnswer = scan.readLine();
+				if (newAnswer.contains(answer.toLowerCase()) || answer.toLowerCase().contains(newAnswer))
 					System.out.println("Write an incorrect answer.");
 				else {
 					client.read(answer(newAnswer));
