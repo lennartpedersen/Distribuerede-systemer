@@ -136,14 +136,14 @@ public class Game implements Serializable{
 					incrementScore((User) answersPair.getValue(), 1);
 			}
 		}
-
-		Collections.sort(users, new Comparator<User>() {
-			
-			@Override
-			public int compare(User s1, User s2) {
-				return (s1.getScore()- s2.getScore());
-			}
-		});
+//
+//		Collections.sort(users, new Comparator<User>() {
+//			
+//			@Override
+//			public int compare(User s1, User s2) {
+//				return (s1.getScore()- s2.getScore());
+//			}
+//		});
 
 	}
 
@@ -190,7 +190,7 @@ public class Game implements Serializable{
 	public void requestScores(){
 		System.out.println("sys out at Game.requestScore");
 		Tuple tuple = new Tuple(Tuple.SCORES);
-		tuple.put(users);
+		tuple.put("HEllos");
 		server.sendToAll(users, tuple);
 
 	}
