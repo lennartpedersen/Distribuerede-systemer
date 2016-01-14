@@ -59,10 +59,7 @@ public class Game {
 		if (cAnswer.equals(uAnswer)) {
 			user.incrementScore(3);
 			user.setCorrect(true);
-			
-			// TODO: Make user unable to choose if he answered correctly
 
-			// user needs to give another answer
 			throw new Exception("Correct answer. Provide incorrect answer");
 
 		} else {
@@ -112,7 +109,8 @@ public class Game {
 		
 		return scores;
 		
-
+		// TODO: Implement comparator to sort scores
+		
 //		Collections.sort(users, new Comparator<User>() {
 //			
 //			@Override

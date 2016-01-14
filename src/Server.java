@@ -7,9 +7,8 @@ import java.net.Socket;
 import java.net.SocketException;
 import java.util.ArrayList;
 import java.util.HashMap;
-import java.util.Iterator;
 import java.util.List;
-import java.util.Map.Entry;
+import java.util.Map;
 
 public class Server {
 	
@@ -80,14 +79,6 @@ public class Server {
 		return true;
 	}
 	
-	public void addUser(User user, ClientThread clientThread){ //Add user as an active client.
-		clientList.put(user, clientThread);
-	}
-	
-	public void removeUser(User user) { //Removes user from clientlist. Quit game. Username is freed.
-		clientList.remove(user);
-	}
-	
 	public boolean alphabeticName(String name) {
 		for (int i = 0; i < name.length(); i++) {
 			char ch = name.charAt(i);
@@ -97,29 +88,37 @@ public class Server {
 	}
 
 	public boolean nameExists(String name) {
-		Iterator<Entry<User, ClientThread>> iterator = clientList.entrySet().iterator();
-		while (iterator.hasNext())
-			if (name.equals(iterator.next().getKey().getName())) 
-				return true;		
+		for (Map.Entry<User, ClientThread> entry : clientList.entrySet()) {
+			if (name.equals(entry.getKey().getName()))
+				return true;
+		}
 		return false;
+	}
+	
+	public void addUser(User user, ClientThread clientThread){ //Add user as an active client.
+		clientList.put(user, clientThread);
+	}
+	
+	public void removeUser(User user) { //Removes user from clientlist. Quit game. Username is freed.
+		clientList.remove(user);
+	}
+	
+	//Methods for managing games
+	public void newGame(String gameName, List<Question> questions, int size) throws Exception{ //Add a game to collection.
+		if (gameExists(gameName))
+			throw new Exception("Game with that name already exists.");
+		Game game = new Game(this, questions, size);
+		gameList.put(gameName, game);
 	}
 	
 	public boolean gameExists(String name) {
 		return gameList.containsKey(name);
 	}
 	
-	//Methods for managing games
-	public void newGame(String name, List<Question> questions, int size) throws Exception{ //Add a game to collection.
-		if (gameExists(name))
-			throw new Exception("Game with that name already exists.");
-		Game game = new Game(this, questions, size);
-		gameList.put(name, game);
-	}
-	
-	public void addUserToGame(String gamename, User user) throws Exception{ //Add new user/player to game.
-		if (!gameExists(gamename))
+	public void addUserToGame(String gameName, User user) throws Exception{ //Add new user/player to game.
+		if (!gameExists(gameName))
 			throw new Exception("Game with that name doesn't exist.");
-		Game game = gameList.get(gamename);
+		Game game = gameList.get(gameName);
 		//Add user to the game
 		game.addUser(user);
 		//Add user to clientList, for keeping track of current active game for user
@@ -128,17 +127,13 @@ public class Server {
 	
 	public void chooseAnswer(User user, int choice) throws Exception { //User chooses an answer they believe is the correct answer.
 		Game game = user.getGame();
-		if (game == null)
-			throw new Exception("You must join a game before you can be choose an answer.");
-//		String answer = game.getListOfAnswers().get(choice);
 		game.addChoice(user, choice - 1);
 	}
 	
 	public void sendToAll(List<User> list, Tuple data){ //Send the given data to all users on the given list.
-		Iterator<User> iterator = list.iterator();
-		while(iterator.hasNext()){
-			ClientThread thread = clientList.get(iterator.next());
-			if (thread != null)
+		for (User user : list) {
+			ClientThread thread = clientList.get(user);
+			if (null != thread)
 				thread.sendData(data);
 		}	
 	}
@@ -162,13 +157,14 @@ public class Server {
 		Game game = user.getGame();
 		game.requestScores();
 	}
-
 	
 	public void addAnswer(User user, String answer) throws Exception {
 		Game game = user.getGame();
-		if (game == null)
-			throw new Exception("You must join a game before you can be choose an answer.");
 		game.addAnswer(user, answer);
+	}
+	
+	public void getGames() {
+		// TODO : Implement show games
 	}
 	
 	class ClientThread extends Thread { //Threads used to perform tasks for individual clients
@@ -246,6 +242,9 @@ public class Server {
 							break;
 						case Tuple.REQUESTNEWROUND:
 							requestNewRound(user);
+							break;
+						case Tuple.SHOWGAMES:
+							getGames();
 							break;
 						default:
 							System.err.println("You are an idiot Thomas. You forgot a command! Unknown Command. Closed connection.");
