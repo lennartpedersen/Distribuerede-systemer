@@ -53,7 +53,8 @@ public class Tuple implements Serializable {
 			REQUESTSTARTGAME = 7,
 			CHOICES = 8,
 			END = 9,
-			SCORES = 10;
+			SCORES = 10,
+			REQUESTNEWROUND = 11;
 
 	private int command;
 	private ArrayList<Object> data;

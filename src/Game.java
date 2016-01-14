@@ -1,7 +1,9 @@
 import java.util.ArrayList;
+import java.util.Collections;
 import java.util.HashMap;
 import java.util.Iterator;
 import java.util.List;
+import java.util.Random;
 
 public class Game {
 
@@ -16,8 +18,8 @@ public class Game {
 	private int gameMode;
 	private List<User> users;
 	private Iterator<Question> iterator;
-	
-	private int startRequests;
+
+	private int statusRequests;
 	private int questionRequests;
 	private int choiceRequests;
 	private int scoreRequests;
@@ -34,30 +36,11 @@ public class Game {
 		gameMode = Default;
 		users = new ArrayList<User>();
 		iterator = questions.iterator();
-		
-		startRequests = 0;
+
+		statusRequests = 0;
 		questionRequests = 0;
 		choiceRequests = 0;
-		scoreRequests = 0;
-		
-	}
-
-	private void newQuestion() {
-		if (iterator.hasNext()) {
-			question = iterator.next();
-
-			questionRequests = 0;
-			choiceRequests = 0;
-			scoreRequests = 0;
-			
-			Tuple tuple = new Tuple(Tuple.STATUS);
-			tuple.put("Next question:");
-			server.sendToAll(users, tuple);
-
-		} else {
-			Tuple tuple = new Tuple(Tuple.END);
-			server.sendToAll(users, tuple);
-		}
+		scoreRequests = 0;		
 	}
 	
 	public void addUser(User user) throws Exception {
@@ -72,7 +55,7 @@ public class Game {
 			   cAnswer = question.getAnswer().toLowerCase();
 
 		// if correct answer
-		if (cAnswer.contains(uAnswer)) {
+		if (cAnswer.equals(uAnswer)) {
 			user.incrementScore(3);
 			
 			// TODO: Make user unable to choose if he answered correctly
@@ -139,37 +122,62 @@ public class Game {
 
 	private List<String> getChoices() {
 		List<String> choices = new ArrayList<String>();
+		
+		Random r = new Random();
+		boolean isAdded = false;
 
 		int i = 0;
 		
+		Collections.shuffle(users);
+		
 		for (User user : users) {
-			System.out.println(user.getAnswer());
-			choices.add(i, user.getAnswer());
+			if (!isAdded && r.nextDouble() < 1/(users.size()+1)) {
+				choices.add(question.getAnswer());
+				questionIndex = i;
+				isAdded = true;
+				i++;
+			}
+			choices.add(user.getAnswer());
 			user.setIndex(i);
 			i++;
 		}
-		System.out.println(question.getAnswer());
-		choices.add(i, question.getAnswer());
-		questionIndex = i;
 		
-		// TODO: Randomize order
+		if (!isAdded) {
+			choices.add(question.getAnswer());
+			questionIndex = i;
+		}
 		
 		return choices;
 		
 	}
+	
+	public void requestNewRound() {
+		statusRequests++;
+		
+		if (statusRequests >= users.size()) {
+			if (iterator.hasNext()) {
+				question = iterator.next();
 
+				statusRequests = 0;
+				questionRequests = 0;
+				choiceRequests = 0;
+				scoreRequests = 0;
+				
+				Tuple tuple = new Tuple(Tuple.STATUS);
+				tuple.put("Next question:");
+				server.sendToAll(users, tuple);
 
-	public void requestStartGame() throws Exception {
-		startRequests++;
-//		System.out.println(startRequests + "/" + users.size());
+			} else {
+				Tuple tuple = new Tuple(Tuple.END);
+				server.sendToAll(users, tuple);
+			}
+		}
 	}
 
 	public void requestQuestion() throws Exception {
 		questionRequests++;
-//		System.out.println(questionRequests + "/" + users.size());
 
 		if (questionRequests >= users.size()) {
-			newQuestion();
 			Tuple tuple = new Tuple(Tuple.QUESTION);
 			tuple.put(question.getQuestion());
 			server.sendToAll(users, tuple);
@@ -178,7 +186,6 @@ public class Game {
 
 	public void requestChoices() {
 		choiceRequests++;
-//		System.out.println(choiceRequests + "/" + users.size());
 		
 		if (choiceRequests >= users.size()) {
 			Tuple tuple = new Tuple(Tuple.CHOICES);
@@ -189,7 +196,6 @@ public class Game {
 
 	public void requestScores() {
 		scoreRequests++;
-//		System.out.println(scoreRequests + "/" + users.size());
 		
 		if (scoreRequests >= users.size()) {
 			Tuple tuple = new Tuple(Tuple.SCORES);

@@ -143,31 +143,23 @@ public class Server {
 		}	
 	}
 	
-	public void requestStartGame(User user) throws Exception { //Request the start of the game tied to given user.
+	public void requestNewRound(User user) {
 		Game game = user.getGame();
-		if (game == null)
-			throw new Exception("You must join a game before you can be ready.");
-		game.requestStartGame();
+		game.requestNewRound();
 	}
 
 	public void requestQuestion(User user) throws Exception {
 		Game game = user.getGame();
-		if (game == null)
-			throw new Exception("You must join a game before you can be choose an answer.");
 		game.requestQuestion();
 	}
 
-	public void requestChoices(User user) throws Exception {
+	public void requestChoices(User user) {
 		Game game = user.getGame();
-		if (game == null)
-			throw new Exception("You must join a game before you can be choose an answer.");
 		game.requestChoices();
 	}
 	
-	private void requestScore(User user) throws Exception {
+	private void requestScore(User user) {
 		Game game = user.getGame();
-		if (game == null)
-			throw new Exception("You must join a game before you can be choose an answer.");
 		game.requestScores();
 	}
 
@@ -232,7 +224,6 @@ public class Server {
 							sendStatus("Joined game.");
 							break;
 						case Tuple.REQUESTSTARTGAME:
-							requestStartGame(user);
 							sendStatus("Start requested.");
 							break;
 						case Tuple.CHOOSE:
@@ -252,6 +243,9 @@ public class Server {
 							break;
 						case Tuple.CHOICES:
 							requestChoices(user);
+							break;
+						case Tuple.REQUESTNEWROUND:
+							requestNewRound(user);
 							break;
 						default:
 							System.err.println("You are an idiot Thomas. You forgot a command! Unknown Command. Closed connection.");
