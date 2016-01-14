@@ -130,8 +130,8 @@ public class Server {
 		Game game = user.getGame();
 		if (game == null)
 			throw new Exception("You must join a game before you can be choose an answer.");
-		String answer = game.getListOfAnswers().get(choice);
-		game.addChoice(user, answer);
+//		String answer = game.getListOfAnswers().get(choice);
+		game.addChoice(user, choice - 1);
 	}
 	
 	public void sendToAll(List<User> list, Tuple data){ //Send the given data to all users on the given list.
@@ -209,7 +209,6 @@ public class Server {
 				
 				try {
 					String name;
-					System.out.println(tuple.getCommand());
 					switch (tuple.getCommand()){ //Decode command switch
 						case Tuple.LOGIN:
 							name = (String) tuple.get(0);

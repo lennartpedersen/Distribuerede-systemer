@@ -6,10 +6,9 @@ import java.io.ObjectOutputStream;
 import java.net.InetAddress;
 import java.net.Socket;
 import java.net.UnknownHostException;
-import java.util.ArrayList;
 import java.util.HashMap;
 import java.util.List;
-import java.util.Map;
+import java.util.Map.Entry;
 
 public class Client  {
 	//Fields
@@ -49,14 +48,13 @@ public class Client  {
 				
 				gameStarted = true;
 				
-				boolean hasQuestion = false,
-						hasAnswer = false,
-						hasChoices = false,
-						hasChoice = false,
-						hasPhase = false,
-						hasScores = false;
-				
 				while (gameStarted) {
+
+					boolean hasQuestion = false,
+							hasAnswer = false,
+							hasChoices = false,
+							hasChoice = false,
+							hasScores = false;
 					
 					while (!hasQuestion) {
 						try {
@@ -106,11 +104,10 @@ public class Client  {
 							hasChoice = true;
 					}
 					
-					try{
-					//client.put(choose(choice));
-					}
-					catch (Exception e){
-					System.out.println(e.getMessage());
+					try {
+						client.put(choose(choice));
+					} catch (Exception e) {
+						System.out.println(e.getMessage());
 					}
 					
 					while (!hasScores) {
@@ -121,9 +118,9 @@ public class Client  {
 							System.out.println(e.getMessage());
 						}
 					}
-					break;
+					
 				} // End while (gameStarted)
-				break;
+				
 			} // End while (true)
 			
 		} catch (IOException e) {
@@ -325,7 +322,7 @@ public class Client  {
 					gameStarted = false;
 				break;
 			case Tuple.SCORES: // Server returns scores as HashMap<User, Integer>
-				printScores((ArrayList<Score>) tuple.get(0));
+				printScores((HashMap<?, ?>) tuple.get(0));
 				break;
 			default:
 				System.out.println((String) tuple.get(0));
@@ -346,11 +343,11 @@ public class Client  {
 		players = choices.size();
 	}
 
-	private void printScores(ArrayList<Score> scores) {
+	private void printScores(HashMap<?,?> scores) {
 		System.out.println("Users with their corresponding score:");
-		for(int i=0; i<scores.size(); i++)
-			System.out.println(scores.get(i).getUser().getName() + " : " + scores.get(i).getValue());
 		
+		for (Entry<?, ?> entry : scores.entrySet())
+			System.out.println((String) entry.getKey() + ": " + (int) entry.getValue());
 	}
 
 	private Tuple login(String name) {
