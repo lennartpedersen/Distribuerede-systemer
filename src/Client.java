@@ -19,7 +19,7 @@ public class Client  {
 	private InetAddress server; //Server address.
 	private int port = 1500; //Server port.
 	private static Client client;
-	private boolean gameStarted;
+	private boolean gameOver;
 	private BufferedReader scan;
 	private int players = 0;
 
@@ -46,9 +46,18 @@ public class Client  {
 				
 				optionPhase();
 				
-				gameStarted = true;
+				gameOver = false;
 				
-				while (gameStarted) {
+				while (true) {
+					
+					try {
+						client.read(requestNewRound());
+					} catch (Exception e) {
+						System.out.println(e.getMessage());
+					}
+					
+					if (gameOver)
+						break;
 
 					boolean hasQuestion = false,
 							hasAnswer = false,
@@ -113,12 +122,6 @@ public class Client  {
 						} catch (Exception e) {
 							System.out.println(e.getMessage());
 						}
-					}
-					
-					try {
-						client.read(status());
-					} catch (Exception e) {
-						System.out.println(e.getMessage());
 					}
 					
 				} // End while (gameStarted)
@@ -320,13 +323,16 @@ public class Client  {
 				break;
 			case Tuple.END: // Server returns the game's phase
 				System.out.println("Game over.");
-				gameStarted = false;
+				gameOver = true;
 				break;
 			case Tuple.SCORES: // Server returns scores as HashMap<User, Integer>
 				printScores((HashMap<?, ?>) tuple.get(0));
 				break;
-			default:
+			case Tuple.STATUS:
 				System.out.println((String) tuple.get(0));
+				break;
+			default:
+				System.err.println("Unknown command received");
 				break;
 			}
 		}
@@ -403,8 +409,8 @@ public class Client  {
 		return tuple;
 	}
 	
-	private Tuple status() {
-		Tuple tuple = new Tuple(Tuple.STATUS);
+	private Tuple requestNewRound() {
+		Tuple tuple = new Tuple(Tuple.REQUESTNEWROUND);
 		return tuple;
 	}
 }
