@@ -161,7 +161,7 @@ public class Client  {
 		while(!hasOption) {
 			try {
 				option = scan.readLine().toLowerCase();
-				if (option.equals("join game") || option.equals("host game"))
+				if (option.equals("join game") || option.equals("create game"))
 					hasOption = true;
 				else
 					System.out.println("Incorrect input. Try again.");
@@ -176,7 +176,7 @@ public class Client  {
 		int gameLength = 0;
 
 
-		if (option.equals("host game")) {
+		if (option.equals("create game")) {
 			System.out.println("Write the maximum number of players:");
 			gameSize = getInteger();
 			System.out.println("Write the number of rounds:");

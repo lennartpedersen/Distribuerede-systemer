@@ -6,6 +6,7 @@ public class User {
 	private int choice;
 	private int score;
 	private int index; // Is set to the index of the user's answer.
+	private boolean correct;
 	
 	public User(String name) {
 		this.name = name;
@@ -30,6 +31,10 @@ public class User {
 
 	public int getScore() {
 		return score;
+	}
+	
+	public void setScore(int score) {
+		this.score = score;
 	}
 	
 	public void incrementScore(int i){
@@ -58,5 +63,13 @@ public class User {
 
 	public void setIndex(int index) {
 		this.index = index;
+	}
+
+	public boolean isCorrect() {
+		return correct;
+	}
+
+	public void setCorrect(boolean correct) {
+		this.correct = correct;
 	}
 }

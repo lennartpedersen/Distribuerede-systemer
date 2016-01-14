@@ -53,10 +53,13 @@ public class Game {
 	public void addAnswer(User user, String answer) throws Exception {
 		String uAnswer = answer.toLowerCase(),
 			   cAnswer = question.getAnswer().toLowerCase();
+		
+		user.setCorrect(false);
 
 		// if correct answer
 		if (cAnswer.equals(uAnswer)) {
 			user.incrementScore(3);
+			user.setCorrect(true);
 			
 			// TODO: Make user unable to choose if he answered correctly
 
@@ -70,7 +73,6 @@ public class Game {
 
 	public void addChoice(User user, int choice) throws Exception {
 		user.setChoice(choice);
-
 	}
 
 	private HashMap<String, Integer> getScores() {
@@ -82,7 +84,9 @@ public class Game {
 			int iAnswer = iUser.getIndex();
 			int iChoice = iUser.getChoice();
 
-			if (iChoice == iAnswer)
+			if (iUser.isCorrect())
+				; // No points for choosing if already answered correctly
+			else if (iChoice == iAnswer)
 				; // What happens if user chooses own answer?
 			else if (iChoice == correct)
 				iUser.incrementScore(2);
@@ -131,7 +135,7 @@ public class Game {
 		Collections.shuffle(users);
 		
 		for (User user : users) {
-			if (!isAdded && r.nextDouble() < 1/(users.size()+1)) {
+			if (!isAdded && r.nextDouble() < 1.0/(users.size()+1)) {
 				choices.add(question.getAnswer());
 				questionIndex = i;
 				isAdded = true;
@@ -168,6 +172,8 @@ public class Game {
 				server.sendToAll(users, tuple);
 
 			} else {
+				for (User user : users)
+					user.setScore(0);
 				Tuple tuple = new Tuple(Tuple.END);
 				server.sendToAll(users, tuple);
 			}
