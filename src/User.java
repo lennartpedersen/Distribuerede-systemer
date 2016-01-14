@@ -2,10 +2,11 @@
 public class User {
 	private String name;
 	private Game game;
-	private boolean spectator;
+	private int score;
 	
 	public User(String name) {
 		this.name = name;
+		score=0;
 	}
 
 	public String getName() {
@@ -24,11 +25,11 @@ public class User {
 		this.game = game;
 	}
 
-	public boolean isSpectator() {
-		return spectator;
+	public int getScore() {
+		return score;
 	}
-
-	public void setSpectator(boolean spectator) {
-		this.spectator = spectator;
+	
+	public void incrementScore(int i){
+		score+=i;
 	}
 }
