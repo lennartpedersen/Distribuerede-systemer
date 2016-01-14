@@ -86,7 +86,7 @@ public class Client  {
 							System.out.println("Error reading line.");
 						} catch (Exception e) {
 							System.out.println(e.getMessage());
-							answer = getNewAnswer(answer);
+							answer = getNewAnswer(answer.toLowerCase());
 							hasAnswer = true;
 						}
 					}
@@ -169,14 +169,33 @@ public class Client  {
 				System.out.println("Error scanning line.");
 			}
 		}
+		
+		while(!hasOption) {
+			try {
+				option = scan.readLine().toLowerCase();
+				if (option.equals("join game") || option.equals("create game"))
+					hasOption = true;
+				else
+					System.out.println("Incorrect input. Try again.");
+			} catch (IOException e) {
+				System.out.println("Error scanning line.");
+			}
+		}
 
 		System.out.println("Write the name of the game:");
 		String gameName = getGameName();
 		int gameSize = 0;
 		int gameLength = 0;
 
-
-		if (option.equals("create game")) {
+		switch (option) {
+		case "show games":
+			try {
+				client.read(showGames());
+			} catch (Exception e) {
+				e.getMessage();
+			}
+			break;
+		case "create game":
 			System.out.println("Write the maximum number of players:");
 			gameSize = getInteger();
 			System.out.println("Write the number of rounds:");
@@ -192,17 +211,20 @@ public class Client  {
 					gameName = getGameName();
 				}
 			}
-		}
-		
-		while (!hasJoinedGame) {
-			try {
-				client.read(joinGame(gameName));
-				hasJoinedGame = true;
-			} catch (Exception e) {
-				System.out.println(e.getMessage());
-				System.out.println("Write new game name:");
-				gameName = getGameName();
+			
+		case "join game":
+			while (!hasJoinedGame) {
+				try {
+					client.read(joinGame(gameName));
+					hasJoinedGame = true;
+				} catch (Exception e) {
+					System.out.println(e.getMessage());
+					System.out.println("Write new game name:");
+					gameName = getGameName();
+				}
 			}
+			break;
+			
 		}
 		
 		// Players can put a start-game request - if all players have
@@ -247,7 +269,7 @@ public class Client  {
 		while (!hasNewAnswer) {
 			try {
 				newAnswer = scan.readLine();
-				if (newAnswer.contains(answer.toLowerCase()) || answer.toLowerCase().contains(newAnswer))
+				if (newAnswer.toLowerCase().contains(answer) || answer.contains(newAnswer.toLowerCase()))
 					System.out.println("Write an incorrect answer.");
 				else {
 					client.read(answer(newAnswer));
@@ -411,6 +433,11 @@ public class Client  {
 	
 	private Tuple requestNewRound() {
 		Tuple tuple = new Tuple(Tuple.REQUESTNEWROUND);
+		return tuple;
+	}
+	
+	private Tuple showGames() {
+		Tuple tuple = new Tuple(Tuple.SHOWGAMES);
 		return tuple;
 	}
 }
