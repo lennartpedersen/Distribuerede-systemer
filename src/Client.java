@@ -156,7 +156,7 @@ public class Client  {
 				hasJoinedGame = false, 
 				hasRequestedStartGame = false;
 		
-		System.out.println("Options: \n Join game \n Host game \n Write your choice:");
+		System.out.println("Options: \n Join game \n Create game \n Write your choice:");
 		String option = "";
 		while(!hasOption) {
 			try {
@@ -246,7 +246,7 @@ public class Client  {
 		
 		while (!hasNewAnswer) {
 			try {
-				newAnswer = scan.readLine();
+				newAnswer = scan.readLine().toLowerCase();
 				if (newAnswer.contains(answer) || answer.contains(newAnswer))
 					System.out.println("Write an incorrect answer.");
 				else {
