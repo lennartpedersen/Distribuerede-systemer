@@ -54,7 +54,6 @@ public class Game {
 		String uAnswer = answer.toLowerCase(),
 			   cAnswer = question.getAnswer().toLowerCase();
 		
-		user.setCorrect(false);
 
 		// if correct answer
 		if (cAnswer.equals(uAnswer)) {
@@ -85,7 +84,7 @@ public class Game {
 			int iChoice = iUser.getChoice();
 
 			if (iUser.isCorrect())
-				; // No points for choosing if already answered correctly
+				iUser.setCorrect(false); // No points for choosing if already answered correctly
 			else if (iChoice == iAnswer)
 				; // What happens if user chooses own answer?
 			else if (iChoice == correct)
