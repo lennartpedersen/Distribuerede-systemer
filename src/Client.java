@@ -104,11 +104,7 @@ public class Client  {
 							hasChoice = true;
 					}
 					
-					try {
-						client.put(choose(choice));
-					} catch (Exception e) {
-						System.out.println(e.getMessage());
-					}
+					client.put(choose(choice));
 					
 					while (!hasScores) {
 						try {
@@ -117,6 +113,12 @@ public class Client  {
 						} catch (Exception e) {
 							System.out.println(e.getMessage());
 						}
+					}
+					
+					try {
+						client.read(status());
+					} catch (Exception e) {
+						System.out.println(e.getMessage());
 					}
 					
 				} // End while (gameStarted)
@@ -316,10 +318,9 @@ public class Client  {
 			case Tuple.CHOICES: // Server returns choices as List<String>
 				printChoices((List<?>) tuple.get(0));
 				break;
-			case Tuple.PHASE: // Server returns the game's phase
-				int phase = (int) tuple.get(0);
-				if (phase == 3)
-					gameStarted = false;
+			case Tuple.END: // Server returns the game's phase
+				System.out.println("Game over.");
+				gameStarted = false;
 				break;
 			case Tuple.SCORES: // Server returns scores as HashMap<User, Integer>
 				printScores((HashMap<?, ?>) tuple.get(0));
@@ -399,6 +400,11 @@ public class Client  {
 	
 	private Tuple scores() {
 		Tuple tuple = new Tuple(Tuple.SCORES);
+		return tuple;
+	}
+	
+	private Tuple status() {
+		Tuple tuple = new Tuple(Tuple.STATUS);
 		return tuple;
 	}
 }

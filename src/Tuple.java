@@ -42,6 +42,7 @@ public class Tuple implements Serializable {
 	 * Do we need more operations? We probably do.
 	 */
 	public static final int 
+			STATUS = -1,
 			ERROR = 0,
 			LOGIN = 1,
 			REQUESTNEWGAME = 2,
@@ -51,7 +52,7 @@ public class Tuple implements Serializable {
 			QUESTION = 6,
 			REQUESTSTARTGAME = 7,
 			CHOICES = 8,
-			PHASE = 9,
+			END = 9,
 			SCORES = 10;
 
 	private int command;

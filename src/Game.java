@@ -42,17 +42,22 @@ public class Game {
 		
 	}
 
-	private void newQuestion() throws Exception {
-		
+	private void newQuestion() {
 		if (iterator.hasNext()) {
 			question = iterator.next();
 
 			questionRequests = 0;
 			choiceRequests = 0;
 			scoreRequests = 0;
+			
+			Tuple tuple = new Tuple(Tuple.STATUS);
+			tuple.put("Next question:");
+			server.sendToAll(users, tuple);
 
-		} else
-			throw new Exception("Error : Game had more rounds than amount of questions.");
+		} else {
+			Tuple tuple = new Tuple(Tuple.END);
+			server.sendToAll(users, tuple);
+		}
 	}
 	
 	public void addUser(User user) throws Exception {

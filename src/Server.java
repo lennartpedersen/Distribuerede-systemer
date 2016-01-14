@@ -253,12 +253,6 @@ public class Server {
 						case Tuple.CHOICES:
 							requestChoices(user);
 							break;
-							//Add new command here.
-							/*
-						case "":
-							
-							break;
-							 */
 						default:
 							System.err.println("You are an idiot Thomas. You forgot a command! Unknown Command. Closed connection.");
 							close();
@@ -275,7 +269,7 @@ public class Server {
 		}
 	
 		private void sendStatus(String status) {
-			Tuple tuple = new Tuple(-1);
+			Tuple tuple = new Tuple(Tuple.STATUS);
 			tuple.put(status);
 			sendData(tuple);
 		}
