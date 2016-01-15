@@ -8,14 +8,6 @@ import java.util.List;
 import java.util.Random;
 
 public class QuestionDB {
-
-	/*public static void main(String[] args) throws FileNotFoundException, IOException {
-		List<Question> myList = getQuestions(5);
-		for (Question q : myList) {
-			System.out.println("Q: " + q.getQuestion());
-			System.out.println("A: " + q.getAnswer() + "\n");
-		}
-	}*/
 	
 	/*
 	 * Reservoir sampling algorithm for randomly choosing k samples from a list
