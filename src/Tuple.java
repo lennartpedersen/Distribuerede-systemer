@@ -1,5 +1,4 @@
 import java.io.Serializable;
-import java.util.ArrayList;
 
 public class Tuple implements Serializable {
 	/*
@@ -45,46 +44,35 @@ public class Tuple implements Serializable {
 			STATUS = -1,
 			ERROR = 0,
 			LOGIN = 1,
-			REQUESTNEWGAME = 2,
+			CREATEGAME = 2,
 			JOINGAME = 3,
 			ANSWER = 4,
 			CHOOSE = 5,
 			QUESTION = 6,
-			REQUESTSTARTGAME = 7,
 			CHOICES = 8,
 			END = 9,
 			SCORES = 10,
-			REQUESTNEWROUND = 11,
+			NEWROUND = 11,
 			SHOWGAMES = 12;
 
 	private int command;
-	private ArrayList<Object> data;
+	private Object data;
 	
 	
 	public Tuple(int command) {
 		this.command = command;
 	}
 
-	public Object get(int index) {
-		return this.data.get(index);
+	public Object getData() {
+		return data;
 	}
 
 	public void put(Object data) {
-		if (this.data == null)
-			this.data = new ArrayList<Object>();
-		this.data.add(data);
-	}
-
-	public void put(int index, Object data) {
-		this.data.add(index, data);
+		this.data = data;
 	}
 
 	public int getCommand() {
 		return command;
-	}
-
-	public void setCommand(int command) {
-		this.command = command;
 	}
 	
 }

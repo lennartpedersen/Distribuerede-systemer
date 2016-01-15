@@ -18,8 +18,9 @@ public class Game {
 	private int gameMode;
 	private List<User> users;
 	private Iterator<Question> iterator;
+	private boolean gameStarted;
 
-	private int statusRequests;
+	private int newRoundRequests;
 	private int questionRequests;
 	private int choiceRequests;
 	private int scoreRequests;
@@ -36,8 +37,9 @@ public class Game {
 		gameMode = Default;
 		users = new ArrayList<User>();
 		iterator = questions.iterator();
+		gameStarted = false;
 
-		statusRequests = 0;
+		newRoundRequests = 0;
 		questionRequests = 0;
 		choiceRequests = 0;
 		scoreRequests = 0;		
@@ -67,7 +69,7 @@ public class Game {
 		}
 	}
 
-	public void addChoice(User user, int choice) throws Exception {
+	public void addChoice(User user, int choice) {
 		user.setChoice(choice);
 	}
 
@@ -153,27 +155,32 @@ public class Game {
 	}
 	
 	public void requestNewRound() {
-		statusRequests++;
+		newRoundRequests++;
 		
-		if (statusRequests >= users.size()) {
+		if (newRoundRequests >= users.size()) {
+			if (!gameStarted)
+				gameStarted = true;
+			
+			Tuple tuple = new Tuple(Tuple.NEWROUND);
 			if (iterator.hasNext()) {
 				question = iterator.next();
 
-				statusRequests = 0;
+				newRoundRequests = 0;
 				questionRequests = 0;
 				choiceRequests = 0;
 				scoreRequests = 0;
 				
-				Tuple tuple = new Tuple(Tuple.STATUS);
-				tuple.put("Next question:");
-				server.sendToAll(users, tuple);
-
+				tuple.put(true);
 			} else {
 				for (User user : users)
 					user.setScore(0);
-				Tuple tuple = new Tuple(Tuple.END);
-				server.sendToAll(users, tuple);
+				tuple.put(false);
 			}
+			server.sendToAll(users, tuple);
+		} else if (!gameStarted) {
+			Tuple tuple = new Tuple(Tuple.STATUS);
+			tuple.put("Users ready: " + newRoundRequests + "/" + users.size());
+			server.sendToAll(users, tuple);
 		}
 	}
 
@@ -205,6 +212,13 @@ public class Game {
 			tuple.put(getScores());
 			server.sendToAll(users, tuple);
 		}
-
+	}
+	
+	public boolean getGameStarted() {
+		return gameStarted;
+	}
+	
+	public List<User> getUsers() {
+		return users;
 	}
 }

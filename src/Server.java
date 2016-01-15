@@ -67,7 +67,7 @@ public class Server {
 		server.start();
 	}
 	
-	public boolean isUserAllowed(String name) throws Exception { //Checks if entered name is allowed. Client-side?
+	public void isUserAllowed(String name, ClientThread thread) throws Exception { //Checks if entered name is allowed. Client-side?
 		if (name.length() == 0)
 			throw new Exception("The name entered is blank.");
 		if (name.length() > 10)
@@ -76,7 +76,8 @@ public class Server {
 			throw new Exception("Name must contain alphabetic characters only.");
 		if (nameExists(name))
 			throw new Exception("A user with the entered name already exists.");
-		return true;
+		thread.user = new User(name);
+		addUser(thread);
 	}
 	
 	public boolean alphabeticName(String name) {
@@ -95,8 +96,8 @@ public class Server {
 		return false;
 	}
 	
-	public void addUser(User user, ClientThread clientThread){ //Add user as an active client.
-		clientList.put(user, clientThread);
+	public void addUser(ClientThread thread){ //Add user as an active client.
+		clientList.put(thread.user, thread);
 	}
 	
 	public void removeUser(User user) { //Removes user from clientlist. Quit game. Username is freed.
@@ -104,7 +105,7 @@ public class Server {
 	}
 	
 	//Methods for managing games
-	public void newGame(String gameName, List<Question> questions, int size) throws Exception{ //Add a game to collection.
+	public void createGame(String gameName, List<Question> questions, int size) throws Exception{ //Add a game to collection.
 		if (gameExists(gameName))
 			throw new Exception("Game with that name already exists.");
 		Game game = new Game(this, questions, size);
@@ -115,17 +116,26 @@ public class Server {
 		return gameList.containsKey(name);
 	}
 	
-	public void addUserToGame(String gameName, User user) throws Exception{ //Add new user/player to game.
+	public void addUserToGame(String gameName, User user) throws Exception { //Add new user/player to game.
 		if (!gameExists(gameName))
 			throw new Exception("Game with that name doesn't exist.");
 		Game game = gameList.get(gameName);
+		
+		List<User> users = game.getUsers();
+		
+		if (!users.isEmpty()) {
+			Tuple tuple = new Tuple(Tuple.STATUS);
+			tuple.put(user.getName() + " joined the game.");
+			sendToAll(users, tuple);
+		}
+		
 		//Add user to the game
 		game.addUser(user);
 		//Add user to clientList, for keeping track of current active game for user
 		user.setGame(game);
 	}
 	
-	public void chooseAnswer(User user, int choice) throws Exception { //User chooses an answer they believe is the correct answer.
+	public void chooseAnswer(User user, int choice) { //User chooses an answer they believe is the correct answer.
 		Game game = user.getGame();
 		game.addChoice(user, choice - 1);
 	}
@@ -163,8 +173,16 @@ public class Server {
 		game.addAnswer(user, answer);
 	}
 	
-	public void getGames() {
-		// TODO : Implement show games
+	public void showGames(ClientThread thread) {
+		ArrayList<String> availableGames = new ArrayList<String>();
+		
+		for (Map.Entry<String, Game> entry : gameList.entrySet()) 
+			if (!entry.getValue().getGameStarted())
+				availableGames.add(entry.getKey());
+		
+		Tuple tuple = new Tuple(Tuple.SHOWGAMES);
+		tuple.put(availableGames);
+		thread.sendData(tuple);
 	}
 	
 	class ClientThread extends Thread { //Threads used to perform tasks for individual clients
@@ -196,55 +214,42 @@ public class Server {
 				//Decode Commmand object and perform task.
 				
 				try {
-					String name;
-					switch (tuple.getCommand()){ //Decode command switch
+					switch (tuple.getCommand()) { //Decode command switch
 						case Tuple.LOGIN:
-							name = (String) tuple.get(0);
-							if (isUserAllowed(name)) {
-								user = new User(name);
-								addUser(user, this);
-								sendStatus("User created.");
-							}
+							isUserAllowed((String) tuple.getData(), this); // Throws exception
+							sendStatus(Tuple.LOGIN, "User created.");
 							break;
-						case Tuple.REQUESTNEWGAME: //Creates a new game
-							name = (String) tuple.get(0);
-							int size = (int) tuple.get(1);
-							int length = (int) tuple.get(2);
-							List<Question> questions = questionsDatabase.getQuestions(length);
-							newGame(name, questions, size);
-							sendStatus("Game created.");
+						case Tuple.SHOWGAMES:
+							showGames(this);
+							break;
+						case Tuple.CREATEGAME: //Creates a new game
+							ArrayList<?> data = (ArrayList<?>) tuple.getData();
+							List<Question> questions = questionsDatabase.getQuestions((int) data.get(2));
+							createGame((String) data.get(0), questions, (int) data.get(1)); // Throws exception
+							sendStatus(Tuple.CREATEGAME, "Game created.");
 							break;
 						case Tuple.JOINGAME: //Add user to an active game
-							name = (String) tuple.get(0);
-							addUserToGame(name, user);
-							sendStatus("Joined game.");
+							addUserToGame((String) tuple.getData(), user); // Throws exception
+							sendStatus(Tuple.JOINGAME, "Joined game.");
 							break;
-						case Tuple.REQUESTSTARTGAME:
-							sendStatus("Start requested.");
-							break;
-						case Tuple.CHOOSE:
-							int choice = (int) tuple.get(0);
-							chooseAnswer(user, choice);
-							break;
-						case Tuple.SCORES:
-							requestScore(user);
-							break;
-						case Tuple.ANSWER:
-							String answer = (String) tuple.get(0);
-							addAnswer(user, answer);
-							sendStatus("Answer recieved.");
+						case Tuple.NEWROUND:
+							requestNewRound(user);
 							break;
 						case Tuple.QUESTION:
 							requestQuestion(user);
 							break;
+						case Tuple.ANSWER:
+							addAnswer(user, (String) tuple.getData()); // Throws exception
+							sendStatus(Tuple.ANSWER, "Answer recieved.");
+							break;
 						case Tuple.CHOICES:
 							requestChoices(user);
 							break;
-						case Tuple.REQUESTNEWROUND:
-							requestNewRound(user);
+						case Tuple.CHOOSE:
+							chooseAnswer(user, (int) tuple.getData());
 							break;
-						case Tuple.SHOWGAMES:
-							getGames();
+						case Tuple.SCORES:
+							requestScore(user);
 							break;
 						default:
 							System.err.println("You are an idiot Thomas. You forgot a command! Unknown Command. Closed connection.");
@@ -261,15 +266,15 @@ public class Server {
 			close(); //Closes all streams. DO NOT REMOVE.
 		}
 	
-		private void sendStatus(String status) {
-			Tuple tuple = new Tuple(Tuple.STATUS);
+		private void sendStatus(int command, String status) {
+			Tuple tuple = new Tuple(command);
 			tuple.put(status);
 			sendData(tuple);
 		}
 		
-		public boolean sendData(Object object){ //Sends object to connected client.
+		public boolean sendData(Tuple tuple){ //Sends object to connected client.
 			try {
-				sOutput.writeObject(object);
+				sOutput.writeObject(tuple);
 				return true;
 			} catch (IOException e) {
 				System.err.println("Error sending data to client.");
