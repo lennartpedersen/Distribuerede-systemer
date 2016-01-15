@@ -190,6 +190,7 @@ public class Client  {
 		int gameSize = 0;
 		int gameLength = 0;
 
+		optionSwitch:
 		switch (option) {
 		case "show games":
 			try {
@@ -202,11 +203,16 @@ public class Client  {
 			
 		case "create game":
 			
-			gameName = getGameName();
-			System.out.println("Write the maximum number of players:");
+			System.out.println("Enter maximum number of players:");
 			gameSize = getInteger();
-			System.out.println("Write the number of rounds:");
+			System.out.println("Enter number of rounds:");
 			gameLength = getInteger();
+			
+			gameName = getGameName();
+			if (gameName.equals("back")) { // BREEEEAAAAK
+				optionPhase();
+				break optionSwitch;
+			}
 			
 			ArrayList<Object> data = new ArrayList<Object>();
 			data.add(gameName);
@@ -220,6 +226,10 @@ public class Client  {
 				} catch (Exception e) {
 					System.out.println(e.getMessage());
 					gameName = getGameName();
+					if (gameName.equals("back")) { // BREEEEAAAAK
+						optionPhase();
+						break optionSwitch;
+					}
 					data.set(0, gameName);
 				}
 			}
@@ -229,6 +239,10 @@ public class Client  {
 				try {
 					if (!hasRequestedNewGame) { // If the user hasn't already been asked
 						gameName = getGameName();
+						if (gameName.equals("back")) { // BREEEEAAAAK
+							optionPhase();
+							break optionSwitch;
+						}
 					}
 					client.putread(Tuple.JOINGAME, gameName);
 					hasJoinedGame = true;
@@ -267,7 +281,7 @@ public class Client  {
 	private String getGameName() {
 		boolean hasGameName = false;
 
-		System.out.println("Enter game name:");
+		System.out.println("Enter game name: (To cancel enter: Back)");
 		String gameName = "";
 		
 		while (!hasGameName) {
@@ -278,6 +292,7 @@ public class Client  {
 				System.out.println("Incorrect input. Try again.");
 			}
 		}
+		
 		return gameName;
 	}
 	
@@ -378,7 +393,7 @@ public class Client  {
 					break;
 				case Tuple.ERROR:
 					throw ((Exception) tuple.getData());
-				default: // LOGIN, CREATEGAME, JOINGAME, STARTGAME, QUESTION
+				default: // LOGIN, CREATEGAME, JOINGAME, STARTGAME, QUESTION, STATUS
 					System.out.println((String) tuple.getData());
 					break;
 				}
