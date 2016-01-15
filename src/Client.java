@@ -202,7 +202,6 @@ public class Client  {
 			
 		case "create game":
 			
-			System.out.println("Write the name of the game:");
 			gameName = getGameName();
 			System.out.println("Write the maximum number of players:");
 			gameSize = getInteger();
@@ -220,7 +219,6 @@ public class Client  {
 					hasRequestedNewGame = true;
 				} catch (Exception e) {
 					System.out.println(e.getMessage());
-					System.out.println("Write new game name:");
 					gameName = getGameName();
 					data.set(0, gameName);
 				}
@@ -229,12 +227,13 @@ public class Client  {
 		case "join game":
 			while (!hasJoinedGame) {
 				try {
+					if (!hasRequestedNewGame) { // If the user hasn't already been asked
+						gameName = getGameName();
+					}
 					client.putread(Tuple.JOINGAME, gameName);
 					hasJoinedGame = true;
 				} catch (Exception e) {
 					System.out.println(e.getMessage());
-					System.out.println("Write new game name:");
-					gameName = getGameName();
 				}
 			}
 			break;
@@ -249,12 +248,12 @@ public class Client  {
 		String start = "";
 		
 		while (!hasRequestedStartGame) {
-			try {
+			try { // TODO: Users not listening to server here.
 				start = scan.readLine().toLowerCase();
 				if (start.equals("start")) {
 					System.out.println("Start requested.");
 					hasRequestedStartGame = true;
-				} else
+				} else 
 					System.out.println("Incorrect input. To begin game enter: Start");
 			} catch (IOException e) {
 				System.out.println("Error reading line.");
@@ -267,6 +266,8 @@ public class Client  {
 	
 	private String getGameName() {
 		boolean hasGameName = false;
+
+		System.out.println("Enter game name:");
 		String gameName = "";
 		
 		while (!hasGameName) {
