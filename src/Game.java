@@ -156,12 +156,14 @@ public class Game {
 	}
 	
 	public void requestStart(User user, String msg) {
-		startRequests++;
+		if (msg.toLowerCase().equals("start")) {
+			startRequests++;
 
-		if (!gameStarted) {
-			Tuple tuple = new Tuple(Tuple.MESSAGE);
-			tuple.put("Users ready: " + startRequests + "/" + users.size());
-			server.sendToAll(users, tuple);
+			if (!gameStarted) {
+				Tuple tuple = new Tuple(Tuple.MESSAGE);
+				tuple.put("Users ready: " + startRequests + "/" + users.size());
+				server.sendToAll(users, tuple);
+			}
 		}
 
 		Tuple tuple = new Tuple(Tuple.STARTGAME);
