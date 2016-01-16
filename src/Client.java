@@ -24,7 +24,7 @@ public class Client  {
 	private BufferedReader scan;
 	private int players = 0;
 	private String userName;
-	private ChatThread chatThread = new ChatThread();
+	private ChatThread chatThread;
 
 	//Constructor
 	public Client() throws UnknownHostException {
@@ -254,6 +254,7 @@ public class Client  {
 		System.out.println("You can now chat with everyone in the game.");
 		System.out.println("When you are ready to begin the game please enter: Start");
 		String start = "";
+		chatThread = new ChatThread();
 		chatThread.start();
 		
 		while (!hasRequestedStart) {
