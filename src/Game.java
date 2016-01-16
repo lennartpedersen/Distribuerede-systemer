@@ -14,13 +14,13 @@ public class Game {
 	 */
 
 	private Server server;
+	private String gameName;
 	private int gameSize;
 	private int gameMode;
 	private List<User> users;
 	private Iterator<Question> iterator;
 	private boolean gameStarted;
 
-	private int newRoundRequests;
 	private int questionRequests;
 	private int choiceRequests;
 	private int scoreRequests;
@@ -31,15 +31,15 @@ public class Game {
 	private static final int 	Default = 0,
 								Humanity = 1;
 
-	public Game(Server server, List<Question> questions, int gameSize) {
+	public Game(Server server, List<Question> questions, String gameName, int gameSize) {
 		this.server = server;
+		this.gameName = gameName;
 		this.gameSize = gameSize;
 		gameMode = Default;
 		users = new ArrayList<User>();
 		iterator = questions.iterator();
 		gameStarted = false;
 
-		newRoundRequests = 0;
 		questionRequests = 0;
 		choiceRequests = 0;
 		scoreRequests = 0;		
@@ -134,7 +134,7 @@ public class Game {
 		Collections.shuffle(users);
 		
 		for (User user : users) {
-			if (!isAdded && r.nextDouble() < 1.0/(users.size()+1)) {
+			if (!isAdded && r.nextDouble() < 1.0 / (users.size() + 1)) {
 				choices.add(question.getAnswer());
 				questionIndex = i;
 				isAdded = true;
@@ -153,43 +153,33 @@ public class Game {
 		return choices;
 		
 	}
-	
-	public void requestNewRound() {
-		newRoundRequests++;
-		
-		if (newRoundRequests >= users.size()) {
-			if (!gameStarted)
-				gameStarted = true;
-			
-			Tuple tuple = new Tuple(Tuple.NEWROUND);
-			if (iterator.hasNext()) {
-				question = iterator.next();
-
-				newRoundRequests = 0;
-				questionRequests = 0;
-				choiceRequests = 0;
-				scoreRequests = 0;
-				
-				tuple.put(true);
-			} else {
-				for (User user : users)
-					user.setScore(0);
-				tuple.put(false);
-			}
-			server.sendToAll(users, tuple);
-		} else if (!gameStarted) {
-			Tuple tuple = new Tuple(Tuple.STATUS);
-			tuple.put("Users ready: " + newRoundRequests + "/" + users.size());
-			server.sendToAll(users, tuple);
-		}
-	}
 
 	public void requestQuestion() throws Exception {
 		questionRequests++;
 
+		if (!gameStarted) {
+			Tuple tuple = new Tuple(Tuple.MESSAGE);
+			tuple.put("Users ready: " + questionRequests + "/" + users.size());
+			server.sendToAll(users, tuple);
+		}
+		
 		if (questionRequests >= users.size()) {
+			questionRequests = 0;
+
+			if (!gameStarted)
+				gameStarted = true;
+			
 			Tuple tuple = new Tuple(Tuple.QUESTION);
-			tuple.put(question.getQuestion());
+			
+			if (iterator.hasNext()) {
+				question = iterator.next();
+				tuple.put(question.getQuestion());
+			} else {
+				for (User user : users)
+					user.setScore(0);
+				server.gameList.remove(gameName);
+				tuple.put("Game over.");
+			}
 			server.sendToAll(users, tuple);
 		}
 	}
@@ -198,6 +188,8 @@ public class Game {
 		choiceRequests++;
 		
 		if (choiceRequests >= users.size()) {
+			choiceRequests = 0;
+			
 			Tuple tuple = new Tuple(Tuple.CHOICES);
 			tuple.put(getChoices());
 			server.sendToAll(users, tuple);
@@ -208,6 +200,8 @@ public class Game {
 		scoreRequests++;
 		
 		if (scoreRequests >= users.size()) {
+			scoreRequests = 0;
+			
 			Tuple tuple = new Tuple(Tuple.SCORES);
 			tuple.put(getScores());
 			server.sendToAll(users, tuple);
