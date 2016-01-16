@@ -208,12 +208,12 @@ public class Client  {
 				break optionSwitch;
 			}
 			
-			ArrayList<Object> data = new ArrayList<Object>();
-			data.add(gameName);
-			data.add(gameSize);
-			data.add(gameLength);
-			
 			while (!hasRequestedNewGame) {
+				ArrayList<Object> data = new ArrayList<Object>();
+				data.add(gameName);
+				data.add(gameSize);
+				data.add(gameLength); // TODO: Really necessary?
+				
 				try {
 					client.putread(Tuple.CREATEGAME, data);
 					hasRequestedNewGame = true;
@@ -224,7 +224,6 @@ public class Client  {
 						optionPhase();
 						break optionSwitch;
 					}
-					data.set(0, gameName);
 				}
 			}
 			
@@ -256,7 +255,7 @@ public class Client  {
 		String start = "";
 		
 		while (!hasRequestedStart) {
-			try {
+			try { // Chat delay, unable to chat after start
 				start = scan.readLine();
 				client.putread(Tuple.STARTGAME, start);
 			} catch (IOException e) {
@@ -412,14 +411,11 @@ public class Client  {
 				System.out.println((String) gameName);
 	}
 	
-	private void startGame(String msg) {
-		String sender = msg.substring(0, msg.indexOf(":"));
-		String message = msg.substring(msg.indexOf(" ") + 1);
-		
-		if (sender.equals(userName) && message.toLowerCase().equals("start"))
+	private void startGame(String msg) {		
+		if (msg.equals("start"))
 			hasRequestedStart = true;
-		
-		System.out.println(msg);
+		else
+			System.out.println(msg);
 	}
 
 	private void printQuestion(String question) {
