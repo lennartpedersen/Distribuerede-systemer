@@ -168,7 +168,7 @@ public class Game {
 
 		Tuple tuple = new Tuple(Tuple.STARTGAME);
 		
-		if (startRequests >= users.size()) {
+		if (startRequests >= users.size() && !gameStarted) {
 			gameStarted = true;
 			tuple.put("start");
 		} else
