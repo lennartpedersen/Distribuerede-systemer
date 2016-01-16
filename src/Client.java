@@ -24,6 +24,7 @@ public class Client  {
 	private BufferedReader scan;
 	private int players = 0;
 	private String userName;
+	private ChatThread chatThread = new ChatThread();
 
 	//Constructor
 	public Client() throws UnknownHostException {
@@ -250,14 +251,13 @@ public class Client  {
 	
 	private void startPhase() {
 		hasRequestedStart = false;		
-		
+		System.out.println("You can now chat with everyone in the game.");
 		System.out.println("When you are ready to begin the game please enter: Start");
 		String start = "";
-		ChatThread chatThread = new ChatThread();
+		chatThread.start();
 		
 		while (!hasRequestedStart) {
 			try { // Chat delay, unable to chat after start
-				chatThread.start();
 				start = scan.readLine();
 				client.put(Tuple.STARTGAME, start);
 			} catch (IOException e) {
@@ -265,11 +265,6 @@ public class Client  {
 			} catch (Exception e) {
 				System.out.println(e.getMessage());
 			}
-		}
-		try {
-			chatThread.join();
-		} catch (InterruptedException e) {
-			System.err.println("ChatThread interrupted current thread.");
 		}
 		gameOver = false;
 	}
@@ -418,10 +413,16 @@ public class Client  {
 				System.out.println((String) gameName);
 	}
 	
-	private void startGame(String msg) {		
-		if (msg.equals("start"))
+	private void startGame(String msg) {
+		if (msg.equals("start")) {
+			System.out.println("Game starting! Wish your opponents good luck!");
 			hasRequestedStart = true;
-		else
+			try {
+				chatThread.join();
+			} catch (InterruptedException e) {
+				System.err.println("ChatThread interrupted current thread.");
+			}
+		} else
 			System.out.println(msg);
 	}
 
@@ -449,11 +450,12 @@ public class Client  {
 	
 	class ChatThread extends Thread {
 		public void run() {
-			try {
-				listenFromServer(Tuple.STARTGAME);
-				Thread.sleep(100);
-			} catch (Exception e) {
-				System.out.println(e.getMessage());
+			while (true) {
+				try {
+					listenFromServer(Tuple.STARTGAME);
+				} catch (Exception e) {
+					System.out.println(e.getMessage());
+				}
 			}
 		}
 	}
