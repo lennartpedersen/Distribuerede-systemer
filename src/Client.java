@@ -253,16 +253,23 @@ public class Client  {
 		
 		System.out.println("When you are ready to begin the game please enter: Start");
 		String start = "";
+		ChatThread chatThread = new ChatThread();
 		
 		while (!hasRequestedStart) {
 			try { // Chat delay, unable to chat after start
+				chatThread.start();
 				start = scan.readLine();
-				client.putread(Tuple.STARTGAME, start);
+				client.put(Tuple.STARTGAME, start);
 			} catch (IOException e) {
 				System.out.println("Error reading line.");
 			} catch (Exception e) {
 				System.out.println(e.getMessage());
 			}
+		}
+		try {
+			chatThread.join();
+		} catch (InterruptedException e) {
+			System.err.println("ChatThread interrupted current thread.");
 		}
 		gameOver = false;
 	}
@@ -438,5 +445,16 @@ public class Client  {
 		
 		for (Entry<?, ?> entry : scores.entrySet())
 			System.out.println((String) entry.getKey() + ": " + (int) entry.getValue());
+	}
+	
+	class ChatThread extends Thread {
+		public void run() {
+			try {
+				listenFromServer(Tuple.STARTGAME);
+				Thread.sleep(100);
+			} catch (Exception e) {
+				System.out.println(e.getMessage());
+			}
+		}
 	}
 }
