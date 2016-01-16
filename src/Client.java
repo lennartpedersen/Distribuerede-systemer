@@ -20,9 +20,10 @@ public class Client  {
 	private InetAddress server; //Server address.
 	private int port = 1500; //Server port.
 	private static Client client;
-	private boolean gameOver;
+	private boolean gameOver, hasRequestedStart;
 	private BufferedReader scan;
 	private int players = 0;
+	private String userName;
 
 	//Constructor
 	public Client() throws UnknownHostException {
@@ -58,15 +59,6 @@ public class Client  {
 				
 				while (true) { // gamePhase
 					
-					try {
-						client.read(Tuple.NEWROUND);
-					} catch (Exception e) {
-						System.out.println(e.getMessage());
-					}
-					
-					if (gameOver)
-						break;
-
 					boolean hasQuestion = false,
 							hasAnswer = false,
 							hasChoices = false,
@@ -81,6 +73,9 @@ public class Client  {
 							System.out.println(e.getMessage());
 						}
 					}
+
+					if (gameOver)
+						break;
 
 					// Answer question
 					String answer = "";
@@ -145,12 +140,11 @@ public class Client  {
 		boolean userLoggedIn = false;
 		
 		System.out.println("Login - enter username: ");
-		String name = "";
 		
 		while (!userLoggedIn) {
 			try {
-				name = scan.readLine();
-				client.putread(Tuple.LOGIN, name);
+				userName = scan.readLine();
+				client.putread(Tuple.LOGIN, userName);
 				userLoggedIn = true;
 			} catch (IOException e) {
 				System.out.println("Error scanning line.");
@@ -256,19 +250,15 @@ public class Client  {
 	}
 	
 	private void startPhase() {
-		boolean hasRequestedStartGame = false;		
+		hasRequestedStart = false;		
 		
 		System.out.println("When you are ready to begin the game please enter: Start");
 		String start = "";
 		
-		while (!hasRequestedStartGame) {
-			try { // TODO: Users not listening to server here.
-				start = scan.readLine().toLowerCase();
-				if (start.equals("start")) {
-					System.out.println("Start requested.");
-					hasRequestedStartGame = true;
-				} else 
-					System.out.println("Incorrect input. To begin game enter: Start");
+		while (!hasRequestedStart) {
+			try {
+				start = scan.readLine();
+				client.putread(Tuple.STARTGAME, start);
 			} catch (IOException e) {
 				System.out.println("Error reading line.");
 			} catch (Exception e) {
@@ -382,8 +372,11 @@ public class Client  {
 				case Tuple.SHOWGAMES:
 					printGames((List<?>) tuple.getData());
 					break;
-				case Tuple.NEWROUND: // Server returns the game's status
-					newRound((boolean) tuple.getData());
+				case Tuple.STARTGAME:
+					startGame((String) tuple.getData());
+					break;
+				case Tuple.QUESTION:
+					printQuestion((String) tuple.getData());
 					break;
 				case Tuple.CHOICES: // Server returns choices as List<String>
 					printChoices((List<?>) tuple.getData());
@@ -393,7 +386,7 @@ public class Client  {
 					break;
 				case Tuple.ERROR:
 					throw ((Exception) tuple.getData());
-				default: // LOGIN, CREATEGAME, JOINGAME, STARTGAME, QUESTION, STATUS
+				default: // LOGIN, CREATEGAME, JOINGAME, STARTGAME, QUESTION, MESSAGE
 					System.out.println((String) tuple.getData());
 					break;
 				}
@@ -410,7 +403,7 @@ public class Client  {
 		}
 		catch(ClassNotFoundException e2) {}
 	}
-	
+
 	private void printGames(List<?> gameNames) {
 		if (gameNames.isEmpty())
 			System.out.println("No available games.");
@@ -419,13 +412,21 @@ public class Client  {
 				System.out.println((String) gameName);
 	}
 	
-	private void newRound(boolean hasQuestion) {
-		if (hasQuestion)
-			System.out.println("Next Question:");
-		else {
-			System.out.println("Game over.");
+	private void startGame(String msg) {
+		String sender = msg.substring(0, msg.indexOf(":"));
+		String message = msg.substring(msg.indexOf(" ") + 1);
+		
+		if (sender.equals(userName) && message.toLowerCase().equals("start"))
+			hasRequestedStart = true;
+		
+		System.out.println(msg);
+	}
+
+	private void printQuestion(String question) {
+		if (question.equals("Game over."))
 			gameOver = true;
-		}
+		
+		System.out.println(question);
 	}
 	
 	private void printChoices(List<?> choices) {
