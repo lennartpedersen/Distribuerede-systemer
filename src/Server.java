@@ -124,11 +124,11 @@ public class Server {
 		gameList.put(name, game);
 	}
 	
-	public void joinGame(String gameName, User user) throws Exception { //Add new user/player to game.
-		if (!gameExists(gameName))
+	public void joinGame(User user, String name) throws Exception { //Add new user/player to game.
+		if (!gameExists(name))
 			throw new Exception("Game with that name doesn't exist.");
 		
-		Game game = gameList.get(gameName);
+		Game game = gameList.get(name);
 		List<User> users = game.getUsers();
 		
 		if (!users.isEmpty()) {
@@ -144,12 +144,10 @@ public class Server {
 	public boolean gameExists(String name) {
 		return gameList.containsKey(name);
 	}
-
-	public void startGame(String msg, User user) {
+	
+	public void requestStart(User user, String msg) {
 		Game game = user.getGame();
-		Tuple tuple = new Tuple(Tuple.STARTGAME); // TODO: ?
-		tuple.put(user.getName() + ": " + msg);
-		sendToAll(game.getUsers(), tuple);
+		game.requestStart(user, msg);
 	}
 
 	public void requestQuestion(User user) throws Exception {
@@ -231,11 +229,11 @@ public class Server {
 							sendStatus(command, "Game created.");
 							break;
 						case Tuple.JOINGAME: //Add user to an active game
-							joinGame((String) tuple.getData(), user); // Throws exception
+							joinGame(user, (String) tuple.getData()); // Throws exception
 							sendStatus(command, "Joined game.");
 							break;
 						case Tuple.STARTGAME:
-							startGame((String) tuple.getData(), user);
+							requestStart(user, (String) tuple.getData());
 							break;
 						case Tuple.QUESTION:
 							requestQuestion(user);

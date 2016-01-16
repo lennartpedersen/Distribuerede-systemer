@@ -16,11 +16,12 @@ public class Game {
 	private Server server;
 	private String gameName;
 	private int gameSize;
-	private int gameMode;
+//	private int gameMode;
 	private List<User> users;
 	private Iterator<Question> iterator;
 	private boolean gameStarted;
 
+	private int startRequests;
 	private int questionRequests;
 	private int choiceRequests;
 	private int scoreRequests;
@@ -28,18 +29,18 @@ public class Game {
 	private Question question;
 	private int questionIndex;
 	
-	private static final int 	Default = 0,
-								Humanity = 1;
+//	private static final int 	Default = 0,
+//								Humanity = 1;
 
 	public Game(Server server, List<Question> questions, String gameName, int gameSize) {
 		this.server = server;
 		this.gameName = gameName;
 		this.gameSize = gameSize;
-		gameMode = Default;
 		users = new ArrayList<User>();
 		iterator = questions.iterator();
 		gameStarted = false;
 
+		startRequests = 0;
 		questionRequests = 0;
 		choiceRequests = 0;
 		scoreRequests = 0;		
@@ -153,21 +154,33 @@ public class Game {
 		return choices;
 		
 	}
-
-	public void requestQuestion() throws Exception {
-		questionRequests++;
+	
+	public void requestStart(User user, String msg) {
+		startRequests++;
 
 		if (!gameStarted) {
 			Tuple tuple = new Tuple(Tuple.MESSAGE);
-			tuple.put("Users ready: " + questionRequests + "/" + users.size());
+			tuple.put("Users ready: " + startRequests + "/" + users.size());
 			server.sendToAll(users, tuple);
 		}
+
+		Tuple tuple = new Tuple(Tuple.STARTGAME);
+		
+		if (startRequests >= users.size()) {
+			gameStarted = true;
+			tuple.put("start");
+		} else
+			tuple.put(user.getName() + ": " + msg);
+		
+		server.sendToAll(users, tuple);
+	}
+
+	public void requestQuestion() throws Exception {
+		questionRequests++;
 		
 		if (questionRequests >= users.size()) {
 			questionRequests = 0;
 
-			if (!gameStarted)
-				gameStarted = true;
 			
 			Tuple tuple = new Tuple(Tuple.QUESTION);
 			
