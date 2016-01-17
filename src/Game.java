@@ -47,8 +47,9 @@ public class Game {
 	}
 	
 	public synchronized void addUser(User user) throws Exception {
-		if (users.size() < gameSize)
+		if (users.size() < gameSize) {
 			users.add(user);
+		}
 		else
 			throw new Exception("Game is full.");
 	}
@@ -152,29 +153,36 @@ public class Game {
 		}
 		
 		return choices;
-		
 	}
 	
-	public synchronized void requestStart(User user, String msg) {
-		if (msg.toLowerCase().equals("start")) {
+	public synchronized void readyStatus() {
+		if (!gameStarted) {
+			Tuple tuple = new Tuple(Tuple.MESSAGE);
+			tuple.put("Users ready: " + startRequests + "/" + users.size());
+			server.sendToAll(users, tuple);
+		}
+	}
+	
+	public synchronized void requestStart(User user, boolean hasRequestedStart, String msg) {
+		boolean newRequest = msg.toLowerCase().equals("start") && !hasRequestedStart;
+		
+		if (newRequest) {
 			startRequests++;
-
-			if (!gameStarted) {
-				Tuple tuple = new Tuple(Tuple.MESSAGE);
-				tuple.put("Users ready: " + startRequests + "/" + users.size());
-				server.sendToAll(users, tuple);
-			}
 		}
 
 		Tuple tuple = new Tuple(Tuple.STARTGAME);
 		
 		if (startRequests >= users.size() && !gameStarted) {
+			readyStatus();
 			gameStarted = true;
 			tuple.put("start");
 		} else
 			tuple.put(user.getName() + ": " + msg);
 		
 		server.sendToAll(users, tuple);
+		
+		if (newRequest)
+			readyStatus();
 	}
 
 	public synchronized void requestQuestion() throws Exception {

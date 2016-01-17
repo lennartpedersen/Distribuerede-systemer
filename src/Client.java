@@ -20,7 +20,7 @@ public class Client  {
 	private InetAddress server; //Server address.
 	private int port = 1500; //Server port.
 	private static Client client;
-	private boolean gameOver, hasRequestedStart;
+	private boolean isGameOver, hasGameStarted, hasRequestedStart;
 	private BufferedReader scan;
 	private int players = 0;
 	private String userName;
@@ -75,7 +75,7 @@ public class Client  {
 						}
 					}
 
-					if (gameOver)
+					if (isGameOver)
 						break;
 
 					// Answer question
@@ -204,7 +204,7 @@ public class Client  {
 			gameLength = getInteger();
 			
 			gameName = getGameName();
-			if (gameName.equals("back")) { // BREEEEAAAAK
+			if (gameName.equals("back")) { // BREEEEAAAAK TODO: Any other option?
 				optionPhase();
 				break optionSwitch;
 			}
@@ -250,24 +250,33 @@ public class Client  {
 	}
 	
 	private void startPhase() {
-		hasRequestedStart = false;		
+		hasGameStarted = false;	
+		hasRequestedStart = false;
 		System.out.println("You can now chat with everyone in the game.");
 		System.out.println("When you are ready to begin the game please enter: Start");
-		String start = "";
+		String msg = "";
 		chatThread = new ChatThread();
 		chatThread.start();
 		
-		while (!hasRequestedStart) {
-			try { // Chat delay, unable to chat after start
-				start = scan.readLine();
-				client.put(Tuple.STARTGAME, start);
+		while (!hasGameStarted) {
+			try {
+				ArrayList<Object> data = new ArrayList<Object>();
+				data.add(hasRequestedStart);
+				
+				msg = scan.readLine();
+				data.add(msg);
+				
+				if (msg.toLowerCase().equals("start"))
+					hasRequestedStart = true;
+				
+				client.put(Tuple.STARTGAME, data);
 			} catch (IOException e) {
 				System.out.println("Error reading line.");
 			} catch (Exception e) {
 				System.out.println(e.getMessage());
 			}
 		}
-		gameOver = false;
+		isGameOver = false;
 	}
 	
 	private String getGameName() {
@@ -388,11 +397,11 @@ public class Client  {
 					break;
 				case Tuple.ERROR:
 					throw ((Exception) tuple.getData());
-				default: // LOGIN, CREATEGAME, JOINGAME, STARTGAME, QUESTION, MESSAGE
+				default: // LOGIN, CREATEGAME, JOINGAME, STARTGAME, QUESTION
 					System.out.println((String) tuple.getData());
 					break;
 				}
-			} else {
+			} else { // MESSAGE
 				System.out.println((String) tuple.getData());
 				listenFromServer(cmdSent);
 			}
@@ -417,7 +426,7 @@ public class Client  {
 	private void startGame(String msg) {
 		if (msg.equals("start")) {
 			System.out.println("Game starting! Wish your opponents good luck!");
-			hasRequestedStart = true;
+			hasGameStarted = true;
 			try {
 				chatThread.join();
 			} catch (InterruptedException e) {
@@ -429,7 +438,7 @@ public class Client  {
 
 	private void printQuestion(String question) {
 		if (question.equals("Game over."))
-			gameOver = true;
+			isGameOver = true;
 		
 		System.out.println(question);
 	}
