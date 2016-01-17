@@ -46,7 +46,7 @@ public class Game {
 		scoreRequests = 0;		
 	}
 	
-	public void addUser(User user) throws Exception {
+	public synchronized void addUser(User user) throws Exception {
 		if (users.size() < gameSize) {
 			users.add(user);
 		}
@@ -54,7 +54,7 @@ public class Game {
 			throw new Exception("Game is full.");
 	}
 	
-	public void addAnswer(User user, String answer) throws Exception {
+	public synchronized void addAnswer(User user, String answer) throws Exception {
 		String uAnswer = answer.toLowerCase(),
 			   cAnswer = question.getAnswer().toLowerCase();
 		
@@ -71,11 +71,11 @@ public class Game {
 		}
 	}
 
-	public void addChoice(User user, int choice) {
+	public synchronized void addChoice(User user, int choice) {
 		user.setChoice(choice);
 	}
 
-	private HashMap<String, Integer> getScores() {
+	private synchronized HashMap<String, Integer> getScores() {
 		int correct = questionIndex;
 		int length = users.size();
 		
@@ -125,7 +125,7 @@ public class Game {
 
 	}
 
-	private List<String> getChoices() {
+	private synchronized List<String> getChoices() {
 		List<String> choices = new ArrayList<String>();
 		
 		Random r = new Random();
@@ -155,7 +155,7 @@ public class Game {
 		return choices;
 	}
 	
-	public void readyStatus() {
+	public synchronized void readyStatus() {
 		if (!gameStarted) {
 			Tuple tuple = new Tuple(Tuple.MESSAGE);
 			tuple.put("Users ready: " + startRequests + "/" + users.size());
@@ -163,7 +163,7 @@ public class Game {
 		}
 	}
 	
-	public void requestStart(User user, boolean hasRequestedStart, String msg) {
+	public synchronized void requestStart(User user, boolean hasRequestedStart, String msg) {
 		boolean newRequest = msg.toLowerCase().equals("start") && !hasRequestedStart;
 		
 		if (newRequest) {
@@ -185,7 +185,7 @@ public class Game {
 			readyStatus();
 	}
 
-	public void requestQuestion() throws Exception {
+	public synchronized void requestQuestion() throws Exception {
 		questionRequests++;
 		
 		if (questionRequests >= users.size()) {
@@ -207,7 +207,7 @@ public class Game {
 		}
 	}
 
-	public void requestChoices() {
+	public synchronized void requestChoices() {
 		choiceRequests++;
 		
 		if (choiceRequests >= users.size()) {
@@ -219,7 +219,7 @@ public class Game {
 		}
 	}
 
-	public void requestScores() {
+	public synchronized void requestScores() {
 		scoreRequests++;
 		
 		if (scoreRequests >= users.size()) {
