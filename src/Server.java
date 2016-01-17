@@ -31,13 +31,13 @@ public class Server {
 		try {
 			serverSocket = new ServerSocket(port);
 		} catch (IOException e) {
-			throw new RuntimeException("Failed to open port "+port, e);
+			throw new RuntimeException("Failed to open port " + port, e);
 		}
 		try {
 			//infinite loop to wait for connections
 			while(true) {
 				Socket socket = serverSocket.accept();  	//wait for connection to accept
-				synchronized(threadlist){
+				synchronized (threadlist) {
 					ClientThread thread = new ClientThread(socket); //make a new ClientThread to handle connection
 					threadlist.add(thread);
 					thread.start();
@@ -67,7 +67,7 @@ public class Server {
 	}
 	
 	public void remove(ClientThread clientThread) { //Remove finished thread from threadlist.
-		synchronized(threadlist){
+		synchronized (threadlist) {
 			threadlist.remove(clientThread);
 		}
 	}
@@ -79,7 +79,8 @@ public class Server {
 	}
 	
 	public void loginUser(ClientThread thread, String name) throws Exception { //Checks if entered name is allowed. Client-side?
-		synchronized(clientList){
+		synchronized (clientList) {
+			
 			if (name.length() == 0)
 				throw new Exception("The name entered is blank.");
 			if (name.length() > 10)
@@ -88,6 +89,7 @@ public class Server {
 				throw new Exception("Name must contain alphabetic characters only.");
 			if (userExists(name))
 				throw new Exception("A user with the entered name already exists.");
+			
 			thread.user = new User(name);
 			addUser(thread);
 			sendStatus(thread, Tuple.LOGIN, "User created.");
@@ -133,7 +135,8 @@ public class Server {
 	
 	// TODO: remove finished games and started games with no users
 	public void createGame(ClientThread thread, ArrayList<?> data) throws Exception{ //Add a game to collection.		
-		synchronized(gameList){
+		synchronized (gameList) {
+
 			String name = (String) data.get(0);
 			int size = (int) data.get(1);
 			int length = (int) data.get(2);
