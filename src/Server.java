@@ -37,28 +37,39 @@ public class Server {
 			//infinite loop to wait for connections
 			while(true) {
 				Socket socket = serverSocket.accept();  	//wait for connection to accept
-				ClientThread thread = new ClientThread(socket); //make a new ClientThread to handle connection
-				threadlist.add(thread);
-				thread.start();
+				synchronized(threadlist){
+					ClientThread thread = new ClientThread(socket); //make a new ClientThread to handle connection
+					threadlist.add(thread);
+					thread.start();
+				}
 			}
 		} catch (SocketException e) { //Exception thrown if server socket is closed while Socket.accept() is running.
 			System.err.println("Server is closing...");
 			return;
 		} catch (IOException e) {
 			e.printStackTrace();
+		} finally {
+			stop();
 		}
 	}
 	
-	public void stop() throws IOException{ //Stops the server and closes sockets. Call with GUI thread.
-		serverSocket.close();
-		for (ClientThread thread : threadlist){
-			thread.close();
+	public void stop() { //Stops the server and closes sockets. Call with GUI thread.
+		try {
+			if (!serverSocket.isClosed())
+				serverSocket.close();
+		} catch (IOException e) {}
+		synchronized(threadlist){
+			for (ClientThread thread : threadlist){
+				thread.close();
+			}
 		}
 		System.err.println("Server closed.");
 	}
 	
 	public void remove(ClientThread clientThread) { //Remove finished thread from threadlist.
-		threadlist.remove(clientThread);
+		synchronized(threadlist){
+			threadlist.remove(clientThread);
+		}
 	}
 	
 	public static void main(String[] args) {
@@ -68,16 +79,18 @@ public class Server {
 	}
 	
 	public void loginUser(String name, ClientThread thread) throws Exception { //Checks if entered name is allowed. Client-side?
-		if (name.length() == 0)
-			throw new Exception("The name entered is blank.");
-		if (name.length() > 10)
-			throw new Exception("Name must be 10 characters or less.");
-		if (!alphabeticName(name))
-			throw new Exception("Name must contain alphabetic characters only.");
-		if (userExists(name))
-			throw new Exception("A user with the entered name already exists.");
-		thread.user = new User(name);
-		addUser(thread);
+		synchronized(clientList){
+			if (name.length() == 0)
+				throw new Exception("The name entered is blank.");
+			if (name.length() > 10)
+				throw new Exception("Name must be 10 characters or less.");
+			if (!alphabeticName(name))
+				throw new Exception("Name must contain alphabetic characters only.");
+			if (userExists(name))
+				throw new Exception("A user with the entered name already exists.");
+			thread.user = new User(name);
+			addUser(thread);
+		}
 	}
 	
 	public boolean alphabeticName(String name) {
@@ -118,10 +131,12 @@ public class Server {
 	}
 	
 	public void createGame(String name, List<Question> questions, int size) throws Exception{ //Add a game to collection.
-		if (gameExists(name))
-			throw new Exception("Game with that name already exists.");
-		Game game = new Game(this, questions, name, size);
-		gameList.put(name, game);
+		synchronized(gameList){
+			if (gameExists(name))
+				throw new Exception("Game with that name already exists.");
+			Game game = new Game(this, questions, name, size);
+			gameList.put(name, game);
+		}
 	}
 	
 	public void joinGame(User user, String name) throws Exception { //Add new user/player to game.
