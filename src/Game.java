@@ -54,6 +54,15 @@ public class Game {
 			throw new Exception("Game is full.");
 	}
 	
+	public synchronized void removeUser(User user){ //Removes a user from the game.
+		users.remove(user);
+		if (0 == users.size()) //If no users are left, delete the game.
+			server.removeGame(gameName);
+		Tuple tuple = new Tuple(Tuple.MESSAGE);
+		tuple.put(user.getName()+" has disconnected from the game.");
+		server.sendToAll(users, tuple );
+	}
+	
 	public synchronized void addAnswer(User user, String answer) throws Exception {
 		String uAnswer = answer.toLowerCase(),
 			   cAnswer = question.getAnswer().toLowerCase();
@@ -200,7 +209,7 @@ public class Game {
 			} else {
 				for (User user : users)
 					user.setScore(0);
-				server.gameList.remove(gameName);
+				server.removeGame(gameName);
 				tuple.put("Game over.");
 			}
 			server.sendToAll(users, tuple);
@@ -238,4 +247,5 @@ public class Game {
 	public List<User> getUsers() {
 		return users;
 	}
+	
 }
