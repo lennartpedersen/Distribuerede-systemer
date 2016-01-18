@@ -5,6 +5,7 @@ import java.io.ObjectOutputStream;
 import java.net.ServerSocket;
 import java.net.Socket;
 import java.net.SocketException;
+import java.net.SocketTimeoutException;
 import java.util.ArrayList;
 import java.util.HashMap;
 import java.util.List;
@@ -19,7 +20,7 @@ public class Server {
 	
 	public QuestionDB questionsDatabase = new QuestionDB(); //Question database
 	public HashMap<User, ClientThread> clientList = new HashMap<User, ClientThread>(); //List of users, their active game and their clientthread.
-	public HashMap<String, Game> gameList = new HashMap<String, Game>(); //List of games, key is name of the game as String. Should be written and read as file?
+	private HashMap<String, Game> gameList = new HashMap<String, Game>(); //List of games, key is name of the game as String. Should be written and read as file?
 	
 	//Constructor
 	public Server() {}
@@ -117,6 +118,9 @@ public class Server {
 	}
 	
 	public void removeUser(User user) { //Removes user from clientlist. Quit game. Username is freed.
+		Game game;
+		if ((game = user.getGame()) != null)
+			game.removeUser(user);
 		clientList.remove(user);
 	}
 	
@@ -170,6 +174,12 @@ public class Server {
 		user.setGame(game);
 		sendStatus(thread, Tuple.JOINGAME, "Joined game.");
 		game.readyStatus();
+	}
+	
+	public void removeGame(String gameName){
+		synchronized(gameList){
+			gameList.remove(gameName);
+		}
 	}
 	
 	public boolean gameExists(String name) {
@@ -241,6 +251,7 @@ public class Server {
 			{
 				sOutput = new ObjectOutputStream(socket.getOutputStream());
 				sInput  = new ObjectInputStream(socket.getInputStream());
+				this.socket.setSoTimeout(3000);
 			}
 			catch (IOException e) {
 				System.err.println("Connection to Client '"+socket.getInetAddress()+"' failed.");
@@ -298,7 +309,6 @@ public class Server {
 					sendData(tuple);
 				}
 			}
-			remove(this); //Removes this ClientThread from Server's threadlist.
 			close(); //Closes all streams. DO NOT REMOVE.
 		}
 		
@@ -314,15 +324,23 @@ public class Server {
 		}
 		
 		public boolean readData(){ //Reads object from connected client.
-			try {
-				tuple = (Tuple) sInput.readObject();
-				return true;
-			} catch (ClassNotFoundException e) {
-				System.err.println("Invalid data from client '"+socket.getInetAddress()+"', connection closed.");
-				close();
-			} catch (IOException e) {
-				System.err.println("Connection with client '"+socket.getInetAddress()+"' interrupted.");
-				close();
+			boolean dataReceived = false;
+			while (dataReceived){
+				try {
+					try {
+						tuple = (Tuple) sInput.readObject();
+						dataReceived = true;
+						return true;
+					} catch (SocketTimeoutException e){
+						sendData(new Tuple(Tuple.HANDSHAKE));
+					}
+				} catch (ClassNotFoundException e) {
+					System.err.println("Invalid data from client '"+socket.getInetAddress()+"', connection closed.");
+					close();
+				} catch (IOException e) {
+					System.err.println("Connection with client '"+socket.getInetAddress()+"' interrupted.");
+					close();
+				}	
 			}
 			return false;
 		}
@@ -338,6 +356,7 @@ public class Server {
 				if (socket != null) socket.close();
 			} catch (IOException e) {}
 			removeUser(user);
+			remove(this); //Removes this ClientThread from Server's threadlist.
 		}
 	}
 }
