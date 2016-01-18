@@ -28,6 +28,7 @@ public class Game {
 
 	private Question question;
 	private int questionIndex;
+	private HashMap<Integer, User> indexMap;
 	
 //	private static final int 	Default = 0,
 //								Humanity = 1;
@@ -75,58 +76,9 @@ public class Game {
 		user.setChoice(choice);
 	}
 
-	private synchronized HashMap<String, Integer> getScores() {
-		int correct = questionIndex;
-		int length = users.size();
-		
-		for (int i = 0; i < length; i++) {
-			User iUser = users.get(i);
-			int iAnswer = iUser.getIndex();
-			int iChoice = iUser.getChoice();
-
-			if (iUser.isCorrect())
-				iUser.setCorrect(false); // No points for choosing if already answered correctly
-			else if (iChoice == iAnswer)
-				; // What happens if user chooses own answer?
-			else if (iChoice == correct)
-				iUser.incrementScore(2);
-			else
-				for (int j = 0; j < length; j++) {
-					if (i != j) {
-						User jUser = users.get(j);
-						int jAnswer = jUser.getIndex();
-
-						if (iChoice == jAnswer) {
-							jUser.incrementScore(1);
-						}
-					}
-				}
-			// TODO: Reference from index to user
-		}
-		
-		
-		HashMap<String, Integer> scores = new HashMap<String, Integer>();
-		
-		for (User user : users) {
-			scores.put(user.getName(), user.getScore());
-		}
-		
-		return scores;
-		
-		// TODO: Implement comparator to sort scores
-		
-//		Collections.sort(users, new Comparator<User>() {
-//			
-//			@Override
-//			public int compare(User s1, User s2) {
-//				return (s1.getScore()- s2.getScore());
-//			}
-//		});
-
-	}
-
 	private synchronized List<String> getChoices() {
 		List<String> choices = new ArrayList<String>();
+		indexMap = new HashMap<Integer, User>();
 		
 		Random r = new Random();
 		boolean isAdded = false;
@@ -141,9 +93,11 @@ public class Game {
 				questionIndex = i;
 				isAdded = true;
 				i++;
+				
 			}
 			choices.add(user.getAnswer());
 			user.setIndex(i);
+			indexMap.put(i, user);
 			i++;
 		}
 		
@@ -153,6 +107,32 @@ public class Game {
 		}
 		
 		return choices;
+	}
+
+	private synchronized HashMap<String, Integer> getScores() {
+		int correct = questionIndex;
+		
+		for (User user : users) {
+			int answer = user.getIndex();
+			int choice = user.getChoice();
+
+			if (user.isCorrect())
+				user.setCorrect(false); // No points for choosing if already answered correctly
+			else if (choice == answer)
+				; // What happens if user chooses own answer?
+			else if (choice == correct)
+				user.incrementScore(2);
+			else
+				indexMap.get(choice).incrementScore(1);
+		}		
+		
+		HashMap<String, Integer> scores = new HashMap<String, Integer>();
+		
+		for (User user : users) {
+			scores.put(user.getName(), user.getScore());
+		}
+		
+		return scores;
 	}
 	
 	public synchronized void readyStatus() {
