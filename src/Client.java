@@ -203,37 +203,32 @@ public class Client  {
 			System.out.println("Enter number of rounds:");
 			gameLength = getInteger();
 			
-			gameName = getGameName();
-			if (gameName.equals("back")) { // BREEEEAAAAK TODO: Any other option?
-				optionPhase();
-				break optionSwitch;
-			}
-			
 			while (!hasRequestedNewGame) {
+				gameName = getGameName();
+				if (gameName.equals("back")) {
+					optionPhase();
+					break optionSwitch;
+				}
+				
 				ArrayList<Object> data = new ArrayList<Object>();
 				data.add(gameName);
 				data.add(gameSize);
-				data.add(gameLength); // TODO: Really necessary?
+				data.add(gameLength);
 				
 				try {
 					client.putread(Tuple.CREATEGAME, data);
 					hasRequestedNewGame = true;
 				} catch (Exception e) {
 					System.out.println(e.getMessage());
-					gameName = getGameName();
-					if (gameName.equals("back")) { // BREEEEAAAAK
-						optionPhase();
-						break optionSwitch;
-					}
 				}
 			}
 			
 		case "join game":
 			while (!hasJoinedGame) {
 				try {
-					if (!hasRequestedNewGame) { // If the user hasn't already been asked
+					if (!hasRequestedNewGame) { // If the user hasn't already been asked for game name while creating game
 						gameName = getGameName();
-						if (gameName.equals("back")) { // BREEEEAAAAK
+						if (gameName.equals("back")) {
 							optionPhase();
 							break optionSwitch;
 						}
