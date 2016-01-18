@@ -86,7 +86,7 @@ public class Client  {
 							answer = scan.readLine();
 							client.putread(Tuple.ANSWER, answer);
 							hasAnswer = true;
-						} catch(IOException e) {
+						} catch (IOException e) {
 							System.out.println("Error reading line.");
 						} catch (Exception e) {
 							System.out.println(e.getMessage());
@@ -134,6 +134,7 @@ public class Client  {
 			
 		} catch (IOException e) {
 			e.printStackTrace();
+			close();
 		}
 	}
 	
@@ -343,6 +344,7 @@ public class Client  {
 			sOutput.writeObject(tuple);
 		} catch (IOException e) {
 			e.printStackTrace();
+			close();
 		}
 	}
 
@@ -353,6 +355,7 @@ public class Client  {
 			listenFromServer(command);
 		} catch (IOException e) {
 			e.printStackTrace();
+			close();
 		}
 	}
 
@@ -363,7 +366,8 @@ public class Client  {
 			sOutput.writeObject(tuple);
 			listenFromServer(command);
 		} catch (IOException e) {
-			e.printStackTrace();
+			e.printStackTrace(); // OS, IS, Socket
+			close();
 		}
 	}
 	
@@ -397,7 +401,8 @@ public class Client  {
 					break;
 				}
 			} else { // MESSAGE
-				System.out.println((String) tuple.getData());
+				if (cmdReceived == Tuple.MESSAGE)
+					System.out.println((String) tuple.getData());
 				listenFromServer(cmdSent);
 			}
 			
@@ -455,7 +460,7 @@ public class Client  {
 	
 	class ChatThread extends Thread {
 		public void run() {
-			while (true) {
+			while (!socket.isClosed()) {
 				try {
 					listenFromServer(Tuple.STARTGAME);
 				} catch (Exception e) {
@@ -463,5 +468,17 @@ public class Client  {
 				}
 			}
 		}
+	}
+	
+	public void close() { //Try to close everything in this thread. Should always be called before thread runs out.
+		try {
+			if (sOutput != null) sOutput.close();
+		} catch (IOException e) {}
+		try {
+			if (sInput != null) sInput.close();
+		} catch (IOException e) {}
+		try {
+			if (socket != null) socket.close();
+		} catch (IOException e) {}
 	}
 }
