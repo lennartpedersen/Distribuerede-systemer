@@ -41,6 +41,7 @@ public class Tuple implements Serializable {
 	 * Do we need more operations? We probably do.
 	 */
 	public static final int 
+			HANDSHAKE = -2,
 			MESSAGE = -1,
 			ERROR = 0,
 			LOGIN = 1,
