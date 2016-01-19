@@ -137,7 +137,6 @@ public class Server {
 		thread.sendData(tuple);
 	}
 	
-	// TODO: remove finished games and started games with no users
 	public void createGame(ClientThread thread, ArrayList<?> data) throws Exception{ //Add a game to collection.		
 		synchronized (gameList) {
 

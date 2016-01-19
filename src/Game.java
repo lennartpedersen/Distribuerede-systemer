@@ -64,7 +64,7 @@ public class Game {
 		server.sendToAll(users, tuple );
 	}
 	
-	public synchronized void addAnswer(User user, String answer) throws Exception {
+	public void addAnswer(User user, String answer) throws Exception {
 		String uAnswer = answer.toLowerCase(),
 			   cAnswer = question.getAnswer().toLowerCase();
 		
@@ -81,7 +81,7 @@ public class Game {
 		}
 	}
 
-	public synchronized void addChoice(User user, int choice) {
+	public void addChoice(User user, int choice) {
 		user.setChoice(choice);
 	}
 

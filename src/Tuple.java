@@ -13,6 +13,12 @@ public class Tuple implements Serializable {
 	 * and any requested or required data attached to the data field. With a failed operation the server responds with a tuple using the ERROR command and the attached exception.
 	 * 
 	 * Operations:
+	 * -2 HANDSHAKE: Used to see if the connection to the client remains active after a period with receiving no data.
+	 * Attached Object/s: None.
+	 * 
+	 * -1 MESSAGE: Used to send a message to be printed. Used to send chat messages and status messages.
+	 * Attached Object/s: String 'message to be printed'.
+	 * 
 	 * 0 ERROR: Used to indicate that an error has occurred with latest operation. Only used by server as a responds to failed operations.
 	 * Attached Object/s: Exception 'the thrown exception'.
 	 * 
@@ -36,6 +42,18 @@ public class Tuple implements Serializable {
 	 * 
 	 * 7 STARTGAMEREQUEST: Used to request or cancel a game start from the client.
 	 * Attached Object/s: Boolean 'if user is ready for the game to start'.
+	 * 
+	 * 8 CHOICES: Used to request a list of the currently given choices in the game.
+	 * Attached Object/s: Client: None. Server: List<String> 'List of possible choices'.
+	 * 
+	 * 9 END: Used to signal the end of the game, saying that there are no more rounds, questions and the game is being deleted.
+	 * Attached Object/s: None.
+	 * 
+	 * 10 SCORES: Used to request a list of the currently given scores in the game.
+	 * Attached Object/s: Client: None. Server: HashMap<String, Integer> 'List of usernames and their associated scores'.
+	 * 
+	 * 12 SHOWGAMES: Request a list of games not currently started.
+	 * Attached Object/s: Client: None. Server: ArrayList<String> 'List of gamenames'.
 	 * 
 	 * 
 	 * Do we need more operations? We probably do.
