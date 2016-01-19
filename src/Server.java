@@ -192,7 +192,7 @@ public class Server {
 		game.readyStatus();
 	}
 	
-	void removeGame(String gameName){
+	void removeGame(String gameName){ //Removes all users from the game and removes the game.
 		synchronized(gameList){
 			gameList.remove(gameName);
 		}
@@ -346,8 +346,8 @@ public class Server {
 		
 		private boolean readData(){ //Reads object from connected client.
 			boolean dataReceived = false;
-			while (dataReceived){
-				try {
+			try {
+				do {
 					try {
 						tuple = (Tuple) sInput.readObject();
 						dataReceived = true;
@@ -355,13 +355,11 @@ public class Server {
 					} catch (SocketTimeoutException e){
 						sendData(new Tuple(Tuple.HANDSHAKE));
 					}
-				} catch (ClassNotFoundException e) {
-					System.err.println("Invalid data from client '"+socket.getInetAddress()+"', connection closed.");
-					close();
-				} catch (IOException e) {
-					System.err.println("Connection with client '"+socket.getInetAddress()+"' interrupted.");
-					close();
-				}	
+				} while (!dataReceived);
+			} catch (ClassNotFoundException e) {
+				System.err.println("Invalid data from client '"+socket.getInetAddress().getHostAddress()+"', connection closed.");
+			} catch (IOException e) {
+				System.err.println("Connection with client '"+socket.getInetAddress().getHostAddress()+"' interrupted.");
 			}
 			return false;
 		}
@@ -376,8 +374,11 @@ public class Server {
 			try {
 				if (socket != null) socket.close();
 			} catch (IOException e) {}
-			removeUser(user);
+			if (user != null)
+				removeUser(user);
 			remove(this); //Removes this ClientThread from Server's threadlist.
+			if (hasObserver)
+				System.out.println("Client thread closed: "+socket.getInetAddress().getHostAddress());
 		}
 	}
 	
@@ -410,6 +411,12 @@ public class Server {
 					case "game":
 						printGames();
 						break;
+					case "info":
+						if (2 > tokens.length)
+							System.out.println("Info needs the name of a client.");
+						else
+							printUserInfo(tokens[1]);
+						break;
 					case "quit":
 					case "exit":
 						quitting = true;
@@ -420,6 +427,7 @@ public class Server {
 						System.out.println("Clients");
 						System.out.println("Games");
 						System.out.println("Threads");
+						System.out.println("Info");
 						System.out.println();
 						System.out.println("Type 'quit' to shutdown the server.");
 						break;
@@ -430,6 +438,26 @@ public class Server {
 					e.printStackTrace();
 				}
 			}
+		}
+
+		private void printUserInfo(String name) { //Searches for user to print.
+			for (ClientThread current : threadList){
+				if (current != null && current.user != null && current.user.getName().equals(name)){
+					printUserInfo(current.user);
+					return;
+				}
+			}
+			System.out.println("User not found.");
+		}
+
+		private void printUserInfo(User user) { //Prints all available information about user.
+			System.out.println("User info:");
+			System.out.println("Name: "+user.getName());
+			System.out.println("Game: "+user.getGame());
+			System.out.println("Answer: "+user.getAnswer());
+			System.out.println("Choice: "+user.getChoice());
+			System.out.println("Index: "+user.getIndex());
+			System.out.println("Score: "+user.getScore());
 		}
 
 		private void printGames() { //Prints all active games in the gameList.
