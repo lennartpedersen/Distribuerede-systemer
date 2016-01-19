@@ -22,8 +22,8 @@ public class Server {
 	private ServerSocket serverSocket; //the socket used by the server
 	private ArrayList<ClientThread> threadList = new ArrayList<ClientThread>(); //a list of currently active threads and tasks. Allows to close threads and sockets.
 	
-	public QuestionDB questionsDatabase = new QuestionDB(); //Question database
-	public HashMap<User, ClientThread> clientList = new HashMap<User, ClientThread>(); //List of users, their active game and their clientthread.
+	private QuestionDB questionsDatabase = new QuestionDB(); //Question database
+	private HashMap<User, ClientThread> clientList = new HashMap<User, ClientThread>(); //List of users, their active game and their clientthread.
 	private HashMap<String, Game> gameList = new HashMap<String, Game>(); //List of games, key is name of the game as String. Should be written and read as file?
 	
 	private ObserverThread observer;
@@ -33,14 +33,14 @@ public class Server {
 	public Server(boolean hasObserver) {
 		this.hasObserver = hasObserver;
 		if (hasObserver){
-			observer = new ObserverThread(this);
+			observer = new ObserverThread();
 			observer.start();
 		}
 	}
 	
 	//Methods
 	//Methods for server management
-	public void start() {
+	public void startServer() {
 		//create socket server and wait for connection requests on port
 		try {
 			serverSocket = new ServerSocket(port);
@@ -64,12 +64,12 @@ public class Server {
 			throw new RuntimeException("Something went horribly wrong.", e);
 		} finally {
 			System.out.println("Server is closing...");
-			stop();
+			stopServer();
 			System.out.println("Server closed.");
 		}
 	}
 	
-	public void stop() { //Stops the server and closes sockets. Call with GUI thread.
+	public void stopServer() { //Stops the server and closes sockets. Call with GUI thread.
 		try {
 			if (!serverSocket.isClosed())
 				serverSocket.close();
@@ -82,7 +82,7 @@ public class Server {
 		}
 	}
 	
-	public void remove(ClientThread clientThread) { //Remove finished thread from threadlist.
+	private void remove(ClientThread clientThread) { //Remove finished thread from threadlist.
 		synchronized (threadList) {
 			threadList.remove(clientThread);
 		}
@@ -91,10 +91,10 @@ public class Server {
 	public static void main(String[] args) {
 		//create a server and start it
 		Server server = new Server(true);
-		server.start();
+		server.startServer();
 	}
 	
-	public void loginUser(ClientThread thread, String name) throws Exception { //Checks if entered name is allowed. Client-side?
+	private void loginUser(ClientThread thread, String name) throws Exception { //Checks if entered name is allowed. Client-side?
 		synchronized (clientList) {
 			
 			if (name.length() == 0)
@@ -112,7 +112,7 @@ public class Server {
 		}
 	}
 	
-	public boolean alphabeticName(String name) {
+	private boolean alphabeticName(String name) {
 		for (int i = 0; i < name.length(); i++) {
 			char ch = name.charAt(i);
 			if (!Character.isAlphabetic(ch))
@@ -120,7 +120,7 @@ public class Server {
 		} return true;
 	}
 
-	public boolean userExists(String name) {
+	private boolean userExists(String name) {
 		for (User user : clientList.keySet())
 			if (name.equals(user.getName()))
 				return true;
@@ -128,12 +128,12 @@ public class Server {
 		return false;
 	}
 	
-	public void addUser(ClientThread thread){ //Add user as an active client.
+	private void addUser(ClientThread thread){ //Add user as an active client.
 		clientList.put(thread.user, thread);
 		if (hasObserver) System.out.println("Client added: "+thread.user.getName());
 	}
 	
-	public void removeUser(User user) { //Removes user from clientlist. Quit game. Username is freed.
+	private void removeUser(User user) { //Removes user from clientlist. Quit game. Username is freed.
 		Game game;
 		if ((game = user.getGame()) != null)
 			game.removeUser(user);
@@ -142,7 +142,7 @@ public class Server {
 	}
 	
 	//Methods for managing games
-	public void showGames(ClientThread thread) {
+	private void showGames(ClientThread thread) {
 		ArrayList<String> availableGames = new ArrayList<String>();
 		
 		for (Map.Entry<String, Game> entry : gameList.entrySet()) 
@@ -154,7 +154,7 @@ public class Server {
 		thread.sendData(tuple);
 	}
 	
-	public void createGame(ClientThread thread, ArrayList<?> data) throws Exception{ //Add a game to collection.		
+	private void createGame(ClientThread thread, ArrayList<?> data) throws Exception{ //Add a game to collection.		
 		synchronized (gameList) {
 
 			String name = (String) data.get(0);
@@ -172,7 +172,7 @@ public class Server {
 		}
 	}
 	
-	public void joinGame(ClientThread thread, String name) throws Exception { //Add new user/player to game.
+	private void joinGame(ClientThread thread, String name) throws Exception { //Add new user/player to game.
 		if (!gameExists(name))
 			throw new Exception("Game with that name doesn't exist.");
 		
@@ -192,30 +192,30 @@ public class Server {
 		game.readyStatus();
 	}
 	
-	public void removeGame(String gameName){
+	void removeGame(String gameName){
 		synchronized(gameList){
 			gameList.remove(gameName);
 		}
 		if (hasObserver) System.out.println("Game removed: "+gameName);
 	}
 	
-	public boolean gameExists(String name) {
+	private boolean gameExists(String name) {
 		return gameList.containsKey(name);
 	}
 	
-	public void requestStart(User user, ArrayList<?> data) {
+	private void requestStart(User user, ArrayList<?> data) {
 		boolean hasRequestedStart = (boolean) data.get(0);
 		String msg = (String) data.get(1);
 		Game game = user.getGame();
 		game.requestStart(user, hasRequestedStart, msg);
 	}
 
-	public void requestQuestion(User user) throws Exception {
+	private void requestQuestion(User user) throws Exception {
 		Game game = user.getGame();
 		game.requestQuestion();
 	}
 
-	public void requestChoices(User user) {
+	private void requestChoices(User user) {
 		Game game = user.getGame();
 		game.requestChoices();
 	}
@@ -225,7 +225,7 @@ public class Server {
 		game.requestScores();
 	}
 	
-	public void addAnswer(ClientThread thread, String answer) throws Exception {
+	private void addAnswer(ClientThread thread, String answer) throws Exception {
 		User user = thread.user;
 		Game game = user.getGame();
 		game.addAnswer(user, answer);
@@ -233,18 +233,18 @@ public class Server {
 
 	}
 	
-	public void addChoice(User user, int choice) { //User chooses an answer they believe is the correct answer.
+	private void addChoice(User user, int choice) { //User chooses an answer they believe is the correct answer.
 		Game game = user.getGame();
 		game.addChoice(user, choice - 1);
 	}
 	
-	public void sendStatus(ClientThread thread, int command, String status) {
+	private void sendStatus(ClientThread thread, int command, String status) {
 		Tuple tuple = new Tuple(command);
 		tuple.put(status);
 		thread.sendData(tuple);
 	}
 	
-	public void sendToAll(List<User> users, Tuple data){ //Send the given data to all users on the given list.
+	void sendToAll(List<User> users, Tuple data){ //Send the given data to all users on the given list.
 		for (User user : users) {
 			ClientThread thread = clientList.get(user);
 			if (null != thread)
@@ -254,11 +254,11 @@ public class Server {
 	
 	class ClientThread extends Thread { //Threads used to perform tasks for individual clients
 		//Fields
-		Socket socket; //the client's connection
-		ObjectInputStream sInput; //input from client
-		ObjectOutputStream sOutput; //output to client
-		User user;
-		Tuple tuple; //current task
+		private Socket socket; //the client's connection
+		private ObjectInputStream sInput; //input from client
+		private ObjectOutputStream sOutput; //output to client
+		private User user;
+		private Tuple tuple; //current task
 
 		//Constructor
 		ClientThread(Socket socket) {
@@ -333,7 +333,7 @@ public class Server {
 			close(); //Closes all streams. DO NOT REMOVE.
 		}
 		
-		public boolean sendData(Tuple tuple){ //Sends object to connected client.
+		private boolean sendData(Tuple tuple){ //Sends object to connected client.
 			try {
 				sOutput.writeObject(tuple);
 				return true;
@@ -344,7 +344,7 @@ public class Server {
 			return false;
 		}
 		
-		public boolean readData(){ //Reads object from connected client.
+		private boolean readData(){ //Reads object from connected client.
 			boolean dataReceived = false;
 			while (dataReceived){
 				try {
@@ -366,7 +366,7 @@ public class Server {
 			return false;
 		}
 		
-		public void close() { //Try to close everything in this thread. Should always be called before thread runs out.
+		private void close() { //Try to close everything in this thread. Should always be called before thread runs out.
 			try {
 				if (sOutput != null) sOutput.close();
 			} catch (IOException e) {}
@@ -382,12 +382,8 @@ public class Server {
 	}
 	
 	class ObserverThread extends Thread { //Basic GUI thread for server, used for troubleshooting and observing. Should not be used to configure the server in any way.
-		private Server server; //Used to call server.
-
 		//Constructor
-		ObserverThread(Server server){
-			this.server = server;
-		}
+		ObserverThread(){}
 		
 		//Methods
 		public void run(){ //Reads input from console (System.in) to receive commands.
@@ -417,7 +413,7 @@ public class Server {
 					case "quit":
 					case "exit":
 						quitting = true;
-						server.stop();
+						stopServer();
 						break;
 					default:
 						System.out.println("Type to list:");
@@ -438,7 +434,7 @@ public class Server {
 
 		private void printGames() { //Prints all active games in the gameList.
 			System.out.println("List of active games:");
-			Iterator<Entry<String, Game>> iterator = server.gameList.entrySet().iterator();
+			Iterator<Entry<String, Game>> iterator = gameList.entrySet().iterator();
 			int index = 0;
 			if (!iterator.hasNext())
 				System.out.println("No currently active games");
@@ -450,7 +446,7 @@ public class Server {
 
 		private void printThreads() { //Prints all active clientThreads in the threadList.
 			System.out.println("List of active client threads:");
-			Iterator<ClientThread> iterator = server.threadList.iterator();
+			Iterator<ClientThread> iterator = threadList.iterator();
 			int index = 0;
 			if (!iterator.hasNext())
 				System.out.println("No currently active client threads");
@@ -462,7 +458,7 @@ public class Server {
 
 		private void printClients() { //Prints all active clients in the clientList.
 			System.out.println("List of active clients:");
-			Iterator<Entry<User, ClientThread>> iterator = server.clientList.entrySet().iterator();
+			Iterator<Entry<User, ClientThread>> iterator = clientList.entrySet().iterator();
 			int index = 0;
 			if (!iterator.hasNext())
 				System.out.println("No currently active clients");
