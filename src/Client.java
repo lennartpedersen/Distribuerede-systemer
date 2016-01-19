@@ -487,7 +487,7 @@ public class Client  {
 						break;
 					case Tuple.ERROR:
 						throw ((Exception) tuple.getData());
-					default: // LOGIN, CREATEGAME, JOINGAME, STARTGAME, QUESTION, MESSAGE
+					case Tuple.MESSAGE: // LOGIN, CREATEGAME, JOINGAME, STARTGAME, QUESTION, MESSAGE
 						System.out.println((String) tuple.getData());
 						break;
 					}

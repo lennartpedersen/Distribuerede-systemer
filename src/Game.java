@@ -55,16 +55,26 @@ public class Game {
 			throw new Exception("Game is full.");
 	}
 	
-	public synchronized void removeUser(User user){ //Removes a user from the game.
+	public synchronized boolean removeUser(User user){ //Removes a user from the game.
+		if (!users.contains(user))
+			return false;
 		users.remove(user);
+		user.setGame(null);
 		if (0 == users.size()) //If no users are left, delete the game.
 			server.removeGame(gameName);
 		Tuple tuple = new Tuple(Tuple.MESSAGE);
 		tuple.put(user.getName()+" has disconnected from the game.");
 		server.sendToAll(users, tuple );
+		return true;
 	}
 	
-	public synchronized void addAnswer(User user, String answer) throws Exception {
+	public synchronized void removeAllUsers(){ //Removes all users from the game.
+		while (0 < users.size()){
+			users.remove(0).setGame(null);
+		}
+	}
+	
+	public void addAnswer(User user, String answer) throws Exception {
 		String uAnswer = answer.toLowerCase(),
 			   cAnswer = question.getAnswer().toLowerCase();
 		
@@ -81,7 +91,7 @@ public class Game {
 		}
 	}
 
-	public synchronized void addChoice(User user, int choice) {
+	public void addChoice(User user, int choice) {
 		user.setChoice(choice);
 	}
 
@@ -187,8 +197,10 @@ public class Game {
 				question = iterator.next();
 				tuple.put(question.getQuestion());
 			} else {
-				for (User user : users)
+				for (User user : users){
 					user.setScore(0);
+					user.setGame(null);
+				}
 				server.removeGame(gameName);
 				tuple.put("Game over.");
 			}
