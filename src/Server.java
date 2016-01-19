@@ -1,5 +1,7 @@
 
+import java.io.BufferedReader;
 import java.io.IOException;
+import java.io.InputStreamReader;
 import java.io.ObjectInputStream;
 import java.io.ObjectOutputStream;
 import java.net.ServerSocket;
@@ -8,22 +10,33 @@ import java.net.SocketException;
 import java.net.SocketTimeoutException;
 import java.util.ArrayList;
 import java.util.HashMap;
+import java.util.Iterator;
 import java.util.List;
 import java.util.Map;
+import java.util.Map.Entry;
 
 public class Server {
 	
 	//Fields
 	private int port = 1500; //the port number to listen for connections
 	private ServerSocket serverSocket; //the socket used by the server
-	private ArrayList<ClientThread> threadlist = new ArrayList<ClientThread>(); //a list of currently active threads and tasks. Allows to close threads and sockets.
+	private ArrayList<ClientThread> threadList = new ArrayList<ClientThread>(); //a list of currently active threads and tasks. Allows to close threads and sockets.
 	
 	public QuestionDB questionsDatabase = new QuestionDB(); //Question database
 	public HashMap<User, ClientThread> clientList = new HashMap<User, ClientThread>(); //List of users, their active game and their clientthread.
 	private HashMap<String, Game> gameList = new HashMap<String, Game>(); //List of games, key is name of the game as String. Should be written and read as file?
 	
+	private ObserverThread observer;
+	private boolean hasObserver;
+	
 	//Constructor
-	public Server() {}
+	public Server(boolean hasObserver) {
+		this.hasObserver = hasObserver;
+		if (hasObserver){
+			observer = new ObserverThread(this);
+			observer.start();
+		}
+	}
 	
 	//Methods
 	//Methods for server management
@@ -38,19 +51,21 @@ public class Server {
 			//infinite loop to wait for connections
 			while(true) {
 				Socket socket = serverSocket.accept();  	//wait for connection to accept
-				synchronized (threadlist) {
+				synchronized (threadList) {
 					ClientThread thread = new ClientThread(socket); //make a new ClientThread to handle connection
-					threadlist.add(thread);
+					threadList.add(thread);
 					thread.start();
+					if (hasObserver) System.out.println("Connected to client: "+socket.getInetAddress().getHostAddress());
 				}
 			}
 		} catch (SocketException e) { //Exception thrown if server socket is closed while Socket.accept() is running.
-			System.err.println("Server is closing...");
-			return;
 		} catch (IOException e) {
 			e.printStackTrace();
+			throw new RuntimeException("Something went horribly wrong.", e);
 		} finally {
+			System.out.println("Server is closing...");
 			stop();
+			System.out.println("Server closed.");
 		}
 	}
 	
@@ -59,23 +74,23 @@ public class Server {
 			if (!serverSocket.isClosed())
 				serverSocket.close();
 		} catch (IOException e) {}
-		synchronized(threadlist){
-			for (ClientThread thread : threadlist){
-				thread.close();
+		synchronized(threadList){
+			for (ClientThread thread : threadList){
+				if (thread != null)
+					thread.close();
 			}
 		}
-		System.err.println("Server closed.");
 	}
 	
 	public void remove(ClientThread clientThread) { //Remove finished thread from threadlist.
-		synchronized (threadlist) {
-			threadlist.remove(clientThread);
+		synchronized (threadList) {
+			threadList.remove(clientThread);
 		}
 	}
 	
 	public static void main(String[] args) {
 		//create a server and start it
-		Server server = new Server();
+		Server server = new Server(true);
 		server.start();
 	}
 	
@@ -115,6 +130,7 @@ public class Server {
 	
 	public void addUser(ClientThread thread){ //Add user as an active client.
 		clientList.put(thread.user, thread);
+		if (hasObserver) System.out.println("Client added: "+thread.user.getName());
 	}
 	
 	public void removeUser(User user) { //Removes user from clientlist. Quit game. Username is freed.
@@ -122,6 +138,7 @@ public class Server {
 		if ((game = user.getGame()) != null)
 			game.removeUser(user);
 		clientList.remove(user);
+		if (hasObserver) System.out.println("Client removed: "+user.getName());
 	}
 	
 	//Methods for managing games
@@ -179,6 +196,7 @@ public class Server {
 		synchronized(gameList){
 			gameList.remove(gameName);
 		}
+		if (hasObserver) System.out.println("Game removed: "+gameName);
 	}
 	
 	public boolean gameExists(String name) {
@@ -269,15 +287,19 @@ public class Server {
 					switch (command) { //Decode command switch
 						case Tuple.LOGIN:
 							loginUser(this, (String) tuple.getData()); // Throws exception
+							if (hasObserver) System.out.println(socket.getLocalAddress().getHostAddress()+" logged in as "+user.getName());
 							break;
 						case Tuple.SHOWGAMES:
 							showGames(this);
+							if (hasObserver) System.out.println(socket.getLocalAddress().getHostAddress()+" : "+user.getName()+" requested game list.");
 							break;
 						case Tuple.CREATEGAME: //Creates a new game
 							createGame(this, (ArrayList<?>) tuple.getData());
+							if (hasObserver) System.out.println(socket.getLocalAddress().getHostAddress()+" : "+user.getName()+" created a new game.");
 							break;
 						case Tuple.JOINGAME: //Add user to an active game
 							joinGame(this, (String) tuple.getData()); // Throws exception
+							if (hasObserver) System.out.println(socket.getLocalAddress().getHostAddress()+" : "+user.getName()+" joined game "+((String) tuple.getData()));
 							break;
 						case Tuple.STARTGAME:
 							requestStart(user, (ArrayList<?>) tuple.getData());
@@ -298,7 +320,7 @@ public class Server {
 							requestScore(user);
 							break;
 						default:
-							System.err.println("You are an idiot Thomas. You forgot a command! Unknown Command. Closed connection.");
+							System.err.println(socket.getInetAddress().getHostAddress()+": Unknown Command received. Closed connection.");
 							close();
 							break;
 					}
@@ -356,6 +378,99 @@ public class Server {
 			} catch (IOException e) {}
 			removeUser(user);
 			remove(this); //Removes this ClientThread from Server's threadlist.
+		}
+	}
+	
+	class ObserverThread extends Thread { //Basic GUI thread for server, used for troubleshooting and observing. Should not be used to configure the server in any way.
+		private Server server; //Used to call server.
+
+		//Constructor
+		ObserverThread(Server server){
+			this.server = server;
+		}
+		
+		//Methods
+		public void run(){ //Reads input from console (System.in) to receive commands.
+			BufferedReader cInput = new BufferedReader(new InputStreamReader(System.in));
+			
+			boolean quitting = false;
+			while (!quitting){
+				try {
+					String tokens[];
+					do {
+						tokens = cInput.readLine().split("[^a-zA-Z]+");
+					} while (1 > tokens.length);
+					
+					switch(tokens[0].toLowerCase()){
+					case "clients": //Prints all active clients in the clientList.
+					case "client":
+						printClients();
+						break;
+					case "threads":
+					case "thread":
+						printThreads();
+						break;
+					case "games":
+					case "game":
+						printGames();
+						break;
+					case "quit":
+					case "exit":
+						quitting = true;
+						server.stop();
+						break;
+					default:
+						System.out.println("Type to list:");
+						System.out.println("Clients");
+						System.out.println("Games");
+						System.out.println("Threads");
+						System.out.println();
+						System.out.println("Type 'quit' to shutdown the server.");
+						break;
+					}
+					
+				} catch (IOException e) {
+					System.err.println("Something went wrong with Observer.");
+					e.printStackTrace();
+				}
+			}
+		}
+
+		private void printGames() { //Prints all active games in the gameList.
+			System.out.println("List of active games:");
+			Iterator<Entry<String, Game>> iterator = server.gameList.entrySet().iterator();
+			int index = 0;
+			if (!iterator.hasNext())
+				System.out.println("No currently active games");
+			while (iterator.hasNext()){
+				System.out.println(index++ +" : "+iterator.next().getKey());
+			}
+			System.out.println();
+		}
+
+		private void printThreads() { //Prints all active clientThreads in the threadList.
+			System.out.println("List of active client threads:");
+			Iterator<ClientThread> iterator = server.threadList.iterator();
+			int index = 0;
+			if (!iterator.hasNext())
+				System.out.println("No currently active client threads");
+			while (iterator.hasNext()){
+				System.out.println(index++ +" : "+iterator.next().socket.getInetAddress().getHostAddress());
+			}
+			System.out.println();
+		}
+
+		private void printClients() { //Prints all active clients in the clientList.
+			System.out.println("List of active clients:");
+			Iterator<Entry<User, ClientThread>> iterator = server.clientList.entrySet().iterator();
+			int index = 0;
+			if (!iterator.hasNext())
+				System.out.println("No currently active clients");
+			while (iterator.hasNext()){
+				Entry<User, ClientThread> currentEntry = iterator.next();
+				System.out.println(index++ +" : "+currentEntry.getValue().socket.getInetAddress().getHostAddress()+":"+currentEntry.getKey().getName());
+			}
+			System.out.println();
 		}
 	}
 }
