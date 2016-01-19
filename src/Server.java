@@ -76,8 +76,9 @@ public class Server {
 		} catch (IOException e) {}
 		synchronized(threadList){
 			for (ClientThread thread : threadList){
-				if (thread != null)
-					thread.close();
+				try {
+					thread.socket.close();
+				} catch(Exception e){} //Swallow possible exceptions.
 			}
 		}
 	}
@@ -277,9 +278,9 @@ public class Server {
 		}
 
 		//Methods
-		public void run() { //Decode command object and perform necessary tasks.
-			while (readData()){ //Read Command object from inputstream. Decode command only if data reading is successful.
-				//Decode Commmand object and perform task.
+		public void run() { //Decode Tuple object and perform necessary tasks.
+			while (readData()){ //Read Tuple object from inputstream. Decode command only if data reading is successful.
+				//Decode Tuple object and perform task.
 				
 				int command = tuple.getCommand();
 				
@@ -376,9 +377,9 @@ public class Server {
 			} catch (IOException e) {}
 			if (user != null)
 				removeUser(user);
-			remove(this); //Removes this ClientThread from Server's threadlist.
 			if (hasObserver)
 				System.out.println("Client thread closed: "+socket.getInetAddress().getHostAddress());
+			remove(this); //Removes this ClientThread from Server's threadlist.
 		}
 	}
 	
