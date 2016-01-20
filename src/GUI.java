@@ -35,7 +35,6 @@ public class GUI extends JFrame implements ActionListener {
 	public static final String LOGINSTATE = "LOGIN", JOINGAMESTATE = "JOIN", PREGAMESTATE = "PREGAME", GAMESTATE = "GAME"; //Constants for the possible GUI states.
 	
 	/*
-	 * TODO Create new game popup.
 	 * TODO Create a possible status line in the main window.
 	 */
 	
@@ -56,12 +55,12 @@ public class GUI extends JFrame implements ActionListener {
 		mainWindow.setVisible(true);
 		
 		//TODO Everything below only for TESTING PURPOSES. SHOULD BE REMOVED before finalization.
-		stateManager.show(statePanel, GAMESTATE); //Changes to the game state.
+		changeGUIState(GAMESTATE); //Changes to the game state.
 		String[] list = {"One", "Two", "Three", "Foo", "Bar", "Foobar"};
 		refreshGameList(list);
 		receiveQuestion("The Canary Islands in the Pacific are named after what animal?");
 		refreshChoicesList(list);
-		gamePhaseManager.next(gamePanel);
+		nextGamePhase();
 		showNewgame();
 	}
 
