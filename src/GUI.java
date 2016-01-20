@@ -10,13 +10,20 @@ import java.awt.event.KeyListener;
 
 public class GUI extends JFrame implements ActionListener, KeyListener {
 
-	private JFrame window = new JFrame();
-	private Container pane;
+	private JFrame mainWindow = new JFrame();
 	private JButton newGameButton = new JButton(), rightMostButton = new JButton(), backButton = new JButton("Back");
 	private JPanel buttonViewPanel = new JPanel(), visualsViewPanel = new JPanel(), topViewPanel = new JPanel();
+	
 	private JTextArea textArea = new JTextArea();
 	private JTextArea userInputTextArea = new JTextArea();
 	private JScrollPane scrollPane = new JScrollPane(textArea), userInputScrollPane;
+	
+	private CardLayout stateManager = new CardLayout(); //The layoutmanager that controls the current state of the GUI.
+	private JPanel statePanel; //The panel containing the GUI states, this panel changes between states with the stateManager (CardLayout).
+	private JPanel loginState, gameState; //The different states of the GUI.
+	private Client client; //Reference to the client for given input to the client.
+	
+	public static final String LOGINSTATE = "LOGIN", GAMESTATE = "GAME";
 	
 	/*
 	 * rightMostButton genbruges i hele GUI'en e.g. den skifter navn og action fra tid til anden.
@@ -42,41 +49,70 @@ public class GUI extends JFrame implements ActionListener, KeyListener {
 	 * |____________________________________|
 	 */
 	
-	public GUI() {
+	public GUI(Client client) {
+		this.client = client;
 		setUpMainWindow();
+		
+		setUpLoginState(); //Creates the login state.
+		statePanel.add(loginState, LOGINSTATE); //Adds the login state as a possible state.
+		
+		setUpGameState(); //Creates the game state.
+		statePanel.add(gameState, GAMESTATE); //Adds the game state as a possible state.
+		
+		mainWindow.setVisible(true);
+		
+		stateManager.show(statePanel, GAMESTATE); //Changes to the game state.
 	}
 	
-	private void setUpMainWindow() {
-		window.setSize(450, 700);
-		pane = window.getContentPane();
-		window.setResizable(false);
-		
-		setUpButtons();
-		visualsViewPanel.setBackground(Color.WHITE);
-		buttonViewPanel.setBackground(Color.GRAY);
-		int topBottomPanelHeight = (int) (window.getHeight() * 0.05);
-		buttonViewPanel.setPreferredSize(new Dimension(window.getWidth(), topBottomPanelHeight*3));
-		topViewPanel.setBackground(Color.GRAY);
-		topViewPanel.setPreferredSize(new Dimension(window.getWidth(), topBottomPanelHeight));
-		pane.add(topViewPanel, BorderLayout.PAGE_START);
-		pane.add(buttonViewPanel, BorderLayout.PAGE_END);
-		pane.add(visualsViewPanel, BorderLayout.CENTER);
-		window.setVisible(true);
-		window.setDefaultCloseOperation(EXIT_ON_CLOSE);
-		window.setLocationRelativeTo(null);
+	private void setUpMainWindow() { //Sets up the desktop window for the application. Anything regarding the setup of the mainWindow and statePanel goes here.
+		mainWindow.setSize(450, 700);
+		mainWindow.setResizable(false);
+		mainWindow.setDefaultCloseOperation(EXIT_ON_CLOSE);
+		mainWindow.setLocationRelativeTo(null);
+		mainWindow.setLayout(stateManager);
+		statePanel = new JPanel(stateManager);
+		mainWindow.add(statePanel);
 	}
-
-	private void setUpButtons() {
-		newGameButton.addActionListener(this);
-		newGameButton.setText("New Game");
-		newGameButton.setActionCommand("start new game");
-		rightMostButton.addActionListener(this);
-		rightMostButton.setText("Join Game");
-		rightMostButton.setActionCommand("join game");
+	
+	private void setUpGameState(){ //Sets up the game state. Anything regarding the setup of the game state its elements goes here.
+		//Should be in main game state.
+		gameState = new JPanel(new BorderLayout());
+		
+		newGameButton = createNewButton("New Game", "start new game");
+		rightMostButton = createNewButton("Join Game", "join game");
 		buttonViewPanel.add(newGameButton, BorderLayout.LINE_START);
 		buttonViewPanel.add(rightMostButton, BorderLayout.LINE_END);
+		
+		visualsViewPanel.setBackground(Color.WHITE);
+		buttonViewPanel.setBackground(Color.GRAY);
+		int topBottomPanelHeight = (int) (mainWindow.getHeight() * 0.05);
+		buttonViewPanel.setPreferredSize(new Dimension(mainWindow.getWidth(), topBottomPanelHeight*3));
+		topViewPanel.setBackground(Color.GRAY);
+		topViewPanel.setPreferredSize(new Dimension(mainWindow.getWidth(), topBottomPanelHeight));
+		gameState.add(topViewPanel, BorderLayout.PAGE_START);
+		gameState.add(buttonViewPanel, BorderLayout.PAGE_END);
+		gameState.add(visualsViewPanel, BorderLayout.CENTER);
+	}
+	
+	private JButton createNewButton(String text, String actionCommand){
+		JButton button = new JButton(text);
+		button.addActionListener(this);
+		button.setActionCommand(actionCommand);
+		return button;
 	}
 
+	private void setUpLoginState(){ 
+		loginState = new JPanel();
+		loginState.setLayout(new BoxLayout(loginState, BoxLayout.Y_AXIS));
+		JLabel username = new JLabel("Username:");
+		JTextField loginField = new JTextField();
+		JButton loginButton = new JButton("Login");
+		loginButton.addActionListener(this);
+		loginState.add(username);
+		loginState.add(loginField);
+		loginState.add(loginButton);
+	}
+	
 	private void setUpJoinGameWindow() {
 		buttonViewPanel.removeAll();
 		
@@ -138,23 +174,6 @@ public class GUI extends JFrame implements ActionListener, KeyListener {
 		buttonViewPanel.repaint();
 	}
 	
-	private void restoreMainWindow() {
-		topViewPanel.removeAll();
-		buttonViewPanel.removeAll();
-		visualsViewPanel.removeAll();
-		
-		userInputTextArea.removeKeyListener(this);
-		textArea.setText(null);
-		setUpButtons();
-		backButton.removeActionListener(this);
-		newGameButton.removeActionListener(this);
-		
-		window.validate();
-		topViewPanel.repaint();
-		buttonViewPanel.repaint();
-		visualsViewPanel.repaint();
-	}
-	
 	private void sendMsg(String msg) {
 		textArea.append(msg + "\n");
 		userInputTextArea.setText("");
@@ -179,7 +198,6 @@ public class GUI extends JFrame implements ActionListener, KeyListener {
 			break;
 			
 		case "back":
-			restoreMainWindow();
 			break;
 			
 		case "send":
