@@ -25,15 +25,20 @@ public class Client  {
 	private int players = 0;
 	private String userName;
 	private ChatThread chatThread;
+	
+	private GUI gui;
 
 	//Constructor
-	public Client() throws UnknownHostException {
+	public Client(boolean hasGUI) throws UnknownHostException {
 		server = InetAddress.getByName("127.0.0.1");
+		if (hasGUI){
+			gui = new GUI(this);
+		}
 	}
 	
 	public static void main(String[] args) throws IOException {
 		//create the Client
-		client = new Client();
+		client = new Client(true);
 		//start the connection to the Server.
 		client.start();	
 	}

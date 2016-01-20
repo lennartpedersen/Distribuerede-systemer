@@ -25,30 +25,6 @@ public class GUI extends JFrame implements ActionListener, KeyListener {
 	
 	public static final String LOGINSTATE = "LOGIN", GAMESTATE = "GAME";
 	
-	/*
-	 * rightMostButton genbruges i hele GUI'en e.g. den skifter navn og action fra tid til anden.
-	 * Layout:
-	 * ______________________________________
-	 * |									|
-	 * |		topViewPanel				|  (back button)
-	 * |____________________________________|
-	 * |									|
-	 * |									|
-	 * |									|
-	 * |									|
-	 * |									|
-	 * |		visualsViewPanel			|  (textArea)
-	 * |									|
-	 * |									|
-	 * |									|
-	 * |									|
-	 * |									|
-	 * |____________________________________|
-	 * |									|
-	 * |		buttonViewPanel				|  (newGameButton, morphingButton, userInputTextArea)
-	 * |____________________________________|
-	 */
-	
 	public GUI(Client client) {
 		this.client = client;
 		setUpMainWindow();
@@ -75,7 +51,6 @@ public class GUI extends JFrame implements ActionListener, KeyListener {
 	}
 	
 	private void setUpGameState(){ //Sets up the game state. Anything regarding the setup of the game state its elements goes here.
-		//Should be in main game state.
 		gameState = new JPanel(new BorderLayout());
 		
 		newGameButton = createNewButton("New Game", "start new game");
