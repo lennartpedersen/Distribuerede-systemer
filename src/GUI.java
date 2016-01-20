@@ -89,7 +89,18 @@ public class GUI extends JFrame implements ActionListener {
 		loginField = new JTextField();
 		loginField.setMaximumSize(
 				new Dimension(200, loginField.getPreferredSize().height));
-		loginField.setDocument(new JTextFieldLimit(10));
+		
+		//Anonymous class to limit the number of characters that can be entered into the textfield.
+		loginField.setDocument(new PlainDocument(){
+			public void insertString(int offset, String str, AttributeSet attr) throws BadLocationException {
+				if (str == null)
+					return;
+			
+				if ((getLength() + str.length()) <= 10) {
+					super.insertString(offset, str, attr);
+				}
+			}
+		});
 		loginField.setHorizontalAlignment(JTextField.CENTER);
 		centerElement(loginField);
 		
@@ -241,7 +252,7 @@ public class GUI extends JFrame implements ActionListener {
 		gameState.add(gamePanel, BorderLayout.CENTER);
 	}
 	
-	private void setUpNewGamePopup(){
+	private void setUpNewGamePopup(){ //Sets up the newgame popup window. Anything regarding the setup of the newgame popup window and its elements goes here.
 		newgameWindow = new JFrame();
 		newgameWindow.setResizable(false);
 		newgameWindow.setDefaultCloseOperation(JFrame.HIDE_ON_CLOSE);
@@ -368,7 +379,7 @@ public class GUI extends JFrame implements ActionListener {
 		gamePhaseManager.next(gamePanel);
 	}
 
-	private void showNewgame(){
+	private void showNewgame(){ //Shows the new game window.
 		newgameWindow.setLocationRelativeTo(null);
 		newgameWindow.setVisible(true);
 	}
@@ -430,7 +441,7 @@ public class GUI extends JFrame implements ActionListener {
 		choiceButton.setEnabled(false);
 	}
 	
-	private void sendNewgame(String gamename, int gameSize, int gameLength){
+	private void sendNewgame(String gamename, int gameSize, int gameLength){ //Send new game request to server.
 		//TODO Send new game request to server.
 		System.out.println("Player wants to start a new game.");
 		System.out.println("Gamename: "+gamename+" Gamesize: "+gameSize+" GameLength: "+gameLength);
@@ -470,22 +481,6 @@ public class GUI extends JFrame implements ActionListener {
 			break;
 		}
 	}
-
-	@SuppressWarnings("serial")
-	class JTextFieldLimit extends PlainDocument { //A simple document extension to limit the amount of characters able to be typed in a JTextField.
-		  private int limit;
-		  JTextFieldLimit(int limit) {
-		    super();
-		    this.limit = limit;
-		  }
-
-		  public void insertString(int offset, String str, AttributeSet attr) throws BadLocationException {
-		    if (str == null)
-		      return;
-
-		    if ((getLength() + str.length()) <= limit) {
-		      super.insertString(offset, str, attr);
-		    }
-		  }
-		}
+	
+	
 }
