@@ -1,6 +1,9 @@
 import javax.swing.*;
-import javax.swing.text.DefaultStyledDocument;
-import javax.swing.text.StyleContext;
+import javax.swing.event.ListSelectionEvent;
+import javax.swing.event.ListSelectionListener;
+import javax.swing.text.BadLocationException;
+import javax.swing.text.AttributeSet;
+import javax.swing.text.PlainDocument;
 
 import java.awt.*;
 import java.awt.event.ActionEvent;
@@ -11,35 +14,47 @@ import java.awt.event.KeyListener;
 public class GUI extends JFrame implements ActionListener, KeyListener {
 
 	private JFrame mainWindow = new JFrame();
-	private JButton newGameButton = new JButton(), rightMostButton = new JButton(), backButton = new JButton("Back");
+	/*private JButton newGameButton = new JButton(), rightMostButton = new JButton(), backButton = new JButton("Back");
 	private JPanel buttonViewPanel = new JPanel(), visualsViewPanel = new JPanel(), topViewPanel = new JPanel();
+	*/
 	
-	private JTextArea textArea = new JTextArea();
-	private JTextArea userInputTextArea = new JTextArea();
-	private JScrollPane scrollPane = new JScrollPane(textArea), userInputScrollPane;
+	private JTextArea receivedMessagesArea = new JTextArea(); //Reference to the text area containing received chat messages.
+	private JList<String> gameList; //Reference to the list showing available games.
+	
+	private JScrollPane scrollPane = new JScrollPane(receivedMessagesArea);
+	
+	private JTextField loginField, chatField; //References to necessary textfields for getting written input.
 	
 	private CardLayout stateManager = new CardLayout(); //The layoutmanager that controls the current state of the GUI.
 	private JPanel statePanel; //The panel containing the GUI states, this panel changes between states with the stateManager (CardLayout).
-	private JPanel loginState, gameState; //The different states of the GUI.
+	private JPanel loginState, joingameState, gameState; //The different states of the GUI.
 	private Client client; //Reference to the client for given input to the client.
 	
-	public static final String LOGINSTATE = "LOGIN", GAMESTATE = "GAME";
+	public static final String LOGINSTATE = "LOGIN", JOINGAMESTATE = "JOIN", GAMESTATE = "GAME";
 	
 	public GUI(Client client) {
-		this.client = client;
+		this.client = client; //TODO Communicate with the Client.
 		setUpMainWindow();
 		
-		setUpLoginState(); //Creates the login state.
-		statePanel.add(loginState, LOGINSTATE); //Adds the login state as a possible state.
+		setUpLoginState(); //Creates the join game state.
+		statePanel.add(loginState, LOGINSTATE); //Adds the join game state as a possible state.
+		
+		setUpJoinGameState(); //Creates the login state.
+		statePanel.add(joingameState, JOINGAMESTATE); //Adds the login state as a possible state.
 		
 		setUpGameState(); //Creates the game state.
 		statePanel.add(gameState, GAMESTATE); //Adds the game state as a possible state.
 		
 		mainWindow.setVisible(true);
 		
-		stateManager.show(statePanel, GAMESTATE); //Changes to the game state.
+		
+		//TODO Everything below only for TESTING PURPOSES. SHOULD BE REMOVED before finalization.
+		stateManager.show(statePanel, JOINGAMESTATE); //Changes to the game state.
+		String[] list = {"One", "Two", "Three", "Foo", "Bar", "Foobar"};
+		refreshGameList(list);
+		
 	}
-	
+
 	private void setUpMainWindow() { //Sets up the desktop window for the application. Anything regarding the setup of the mainWindow and statePanel goes here.
 		mainWindow.setSize(450, 700);
 		mainWindow.setResizable(false);
@@ -50,11 +65,52 @@ public class GUI extends JFrame implements ActionListener, KeyListener {
 		mainWindow.add(statePanel);
 	}
 	
-	private void setUpGameState(){ //Sets up the game state. Anything regarding the setup of the game state its elements goes here.
-		gameState = new JPanel(new BorderLayout());
+	private void setUpJoinGameState() { //Sets up the join game state. Anything regarding the setup of the join game state and its elements goes here.
+		joingameState = new JPanel();
+		joingameState.setLayout(new BoxLayout(joingameState, BoxLayout.Y_AXIS));
 		
-		newGameButton = createNewButton("New Game", "start new game");
-		rightMostButton = createNewButton("Join Game", "join game");
+		//Create the list showing games.
+		gameList = new JList<String>();
+		gameList.setSelectionMode(ListSelectionModel.SINGLE_SELECTION);
+		
+		//Anonymous class that listens for selection change in the list.
+		gameList.addListSelectionListener(new ListSelectionListener(){
+		    @Override  
+			public void valueChanged(ListSelectionEvent e) {
+		        //TODO Can implement to join game on selection.
+		      }
+		    });
+		
+		//Creates a new scrollpane to allow scrolling in the game list if necessary.
+		JScrollPane scrollingList = new JScrollPane(gameList);
+		scrollingList.setHorizontalScrollBarPolicy(JScrollPane.HORIZONTAL_SCROLLBAR_NEVER);
+		scrollingList.setVerticalScrollBarPolicy(JScrollPane.VERTICAL_SCROLLBAR_AS_NEEDED);
+		
+		//Create a join game button.
+		JButton joingameButton = createNewButton("Join Game", "join game");
+		centerElement(joingameButton);
+		
+		//Create a new game button.
+		JButton newGameButton = createNewButton("New Game", "new game");
+		centerElement(newGameButton);
+		
+		joingameState.add(scrollingList);
+		joingameState.add(joingameButton);
+		joingameState.add(newGameButton);
+	}
+	
+	private void refreshGameList(String[] list){
+		gameList.setListData(list);
+	}
+	
+	private void setUpGameState(){ //Sets up the game state. Anything regarding the setup of the game state and its elements goes here.
+		//Should include a New Game button and a list of currently active games to join.
+		gameState = new JPanel(new BorderLayout());
+		JPanel buttonViewPanel = new JPanel();
+		JPanel visualsViewPanel = new JPanel();
+		JPanel topViewPanel = new JPanel();
+		JButton newGameButton = createNewButton("New Game", "start new game");
+		JButton rightMostButton = createNewButton("Join Game", "join game");
 		buttonViewPanel.add(newGameButton, BorderLayout.LINE_START);
 		buttonViewPanel.add(rightMostButton, BorderLayout.LINE_END);
 		
@@ -68,115 +124,84 @@ public class GUI extends JFrame implements ActionListener, KeyListener {
 		gameState.add(buttonViewPanel, BorderLayout.PAGE_END);
 		gameState.add(visualsViewPanel, BorderLayout.CENTER);
 	}
+
+	private void setUpLoginState(){ //Sets up the login state. Anything regarding the setup of the login state and its elements goes here.
+		loginState = new JPanel();
+		loginState.setLayout(new BoxLayout(loginState, BoxLayout.Y_AXIS));
+		centerElement(loginState);
+		
+		//Creates and configures login label.
+		JLabel username = new JLabel("Username:");
+		centerElement(username);
+		
+		//Creates and configures login field for username input.
+		loginField = new JTextField();
+		loginField.setMaximumSize(
+				new Dimension(200, loginField.getPreferredSize().height));
+		loginField.setDocument(new JTextFieldLimit(10));
+		loginField.setHorizontalAlignment(JTextField.CENTER);
+		centerElement(loginField);
+		
+		//Creates and configures login button.
+		JButton loginButton = createNewButton("Login", "login");
+		loginButton.addActionListener(this);
+		centerElement(loginButton);
+		
+		loginState.add(username);
+		loginState.add(loginField);
+		loginState.add(loginButton);
+	}
+
 	
-	private JButton createNewButton(String text, String actionCommand){
+	
+	private JButton createNewButton(String text, String actionCommand){ //Creates new JButton with necessary attributes.
 		JButton button = new JButton(text);
 		button.addActionListener(this);
 		button.setActionCommand(actionCommand);
 		return button;
 	}
-
-	private void setUpLoginState(){ 
-		loginState = new JPanel();
-		loginState.setLayout(new BoxLayout(loginState, BoxLayout.Y_AXIS));
-		JLabel username = new JLabel("Username:");
-		JTextField loginField = new JTextField();
-		JButton loginButton = new JButton("Login");
-		loginButton.addActionListener(this);
-		loginState.add(username);
-		loginState.add(loginField);
-		loginState.add(loginButton);
-	}
 	
-	private void setUpJoinGameWindow() {
-		buttonViewPanel.removeAll();
-		
-		JTextField textField = new JTextField(20);
-		buttonViewPanel.add(textField, BorderLayout.LINE_START);
-		
-		rightMostButton.setText("Request Start");
-		rightMostButton.setActionCommand("request start");
-		
-		addBackButton();
-		buttonViewPanel.add(rightMostButton, BorderLayout.LINE_END);
-		buttonViewPanel.validate();
-		buttonViewPanel.repaint();
-	}
-
-	private void addBackButton() {
-		backButton.addActionListener(this);
-		backButton.setActionCommand("back");
-		topViewPanel.add(backButton, BorderLayout.LINE_START);
-		topViewPanel.validate();
-		topViewPanel.repaint();
-	}
-	
-	private void setUpGameWindow() {
-		buttonViewPanel.removeAll();
-
-		userInputScrollPane = new JScrollPane(userInputTextArea);
-		userInputScrollPane.setPreferredSize(new Dimension(buttonViewPanel.getWidth() - rightMostButton.getWidth() - 20, buttonViewPanel.getHeight()-10));
-		userInputScrollPane.setAutoscrolls(true);
-		userInputScrollPane.setVerticalScrollBarPolicy(ScrollPaneConstants.VERTICAL_SCROLLBAR_AS_NEEDED);
-		userInputScrollPane.setHorizontalScrollBarPolicy(ScrollPaneConstants.HORIZONTAL_SCROLLBAR_NEVER);
-		buttonViewPanel.add(userInputScrollPane, BorderLayout.LINE_START);
-		
-		rightMostButton.setText("SEND!");
-		rightMostButton.setActionCommand("send");
-		buttonViewPanel.add(rightMostButton, BorderLayout.LINE_END);
-		if(topViewPanel.getComponentCount() < 1) addBackButton();
-		
-		userInputTextArea.addKeyListener(this);
-		userInputTextArea.requestFocus();
-		userInputTextArea.setLineWrap(true);
-		userInputTextArea.setWrapStyleWord(true);
-		userInputTextArea.setText("");
-		
-		textArea.setEditable(false);
-		textArea.setLineWrap(true);
-		textArea.setWrapStyleWord(true);
-		
-		scrollPane.setPreferredSize(new Dimension(visualsViewPanel.getWidth()-10, visualsViewPanel.getHeight()-10));
-		scrollPane.setAutoscrolls(true);
-		scrollPane.setVerticalScrollBarPolicy(ScrollPaneConstants.VERTICAL_SCROLLBAR_AS_NEEDED);
-		scrollPane.setHorizontalScrollBarPolicy(ScrollPaneConstants.HORIZONTAL_SCROLLBAR_NEVER);
-		visualsViewPanel.add(scrollPane, BorderLayout.CENTER);
-		
-		visualsViewPanel.validate();
-		visualsViewPanel.repaint();
-		
-		buttonViewPanel.validate();
-		buttonViewPanel.repaint();
+	private void centerElement(JComponent comp){ //Centers given element.
+		comp.setAlignmentX(CENTER_ALIGNMENT);
+		comp.setAlignmentY(CENTER_ALIGNMENT);
 	}
 	
 	private void sendMsg(String msg) {
-		textArea.append(msg + "\n");
-		userInputTextArea.setText("");
+		receivedMessagesArea.append(msg + "\n");
+		chatField.setText("");
 	}
 
 	@Override
 	public void actionPerformed(ActionEvent e) {
+		/*
+		 * TODO
+		 * Create action for login button "login".
+		 * For new game "new game".
+		 * For join game "join game".
+		 * 
+		 */
 		switch (e.getActionCommand()) {
-		case "start new game":
+		case "new game":
 			System.out.println("Player wants to start a new game.");
-			setUpGameWindow();
+			
 			break;
 			
 		case "join game":
 			System.out.println("Player wants to join a game.");
-			setUpJoinGameWindow();
+			
 			break;
 			
 		case "request start":
 			System.out.println("Player is requesting a start.");
-			setUpGameWindow();
+			
 			break;
 			
 		case "back":
+			
 			break;
 			
 		case "send":
-			sendMsg(userInputTextArea.getText());
+			
 			break;
 
 		default:
@@ -186,10 +211,10 @@ public class GUI extends JFrame implements ActionListener, KeyListener {
 
 
 	@Override
-	public void keyPressed(KeyEvent e) {
-		if(e.getKeyCode() == KeyEvent.VK_ENTER && userInputTextArea.isFocusOwner()) {
-			sendMsg(userInputTextArea.getText());
-			userInputTextArea.setCaretPosition(1);
+	public void keyPressed(KeyEvent e) { //When pressing enter in the chat textfield, send the chat message.
+		if(e.getKeyCode() == KeyEvent.VK_ENTER && chatField.isFocusOwner()) {
+			sendMsg(chatField.getText());
+			chatField.setCaretPosition(1);
 		}
 	}
 
@@ -197,5 +222,22 @@ public class GUI extends JFrame implements ActionListener, KeyListener {
 	public void keyTyped(KeyEvent e) {}
 	@Override
 	public void keyReleased(KeyEvent e) {}
-	
+
+	@SuppressWarnings("serial")
+	class JTextFieldLimit extends PlainDocument { //A simple document extension to limit the amount of characters able to be typed in the JTextField.
+		  private int limit;
+		  JTextFieldLimit(int limit) {
+		    super();
+		    this.limit = limit;
+		  }
+
+		  public void insertString(int offset, String str, AttributeSet attr) throws BadLocationException {
+		    if (str == null)
+		      return;
+
+		    if ((getLength() + str.length()) <= limit) {
+		      super.insertString(offset, str, attr);
+		    }
+		  }
+		}
 }
