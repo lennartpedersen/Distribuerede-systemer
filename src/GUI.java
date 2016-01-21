@@ -1,29 +1,56 @@
-import javax.swing.*;
+import javax.swing.BorderFactory;
+import javax.swing.Box;
+import javax.swing.BoxLayout;
+import javax.swing.JButton;
+import javax.swing.JComponent;
+import javax.swing.JFrame;
+import javax.swing.JLabel;
+import javax.swing.JList;
+import javax.swing.JPanel;
+import javax.swing.JScrollPane;
+import javax.swing.JTextArea;
+import javax.swing.JTextField;
+import javax.swing.ListSelectionModel;
+import javax.swing.Timer;
 import javax.swing.event.ListSelectionEvent;
 import javax.swing.event.ListSelectionListener;
 import javax.swing.text.BadLocationException;
 import javax.swing.text.AttributeSet;
 import javax.swing.text.PlainDocument;
 
-import java.awt.*;
+import java.awt.BorderLayout;
+import java.awt.CardLayout;
+import java.awt.Color;
+import java.awt.Dimension;
+import java.awt.FlowLayout;
+import java.awt.GridBagConstraints;
+import java.awt.GridBagLayout;
+import java.awt.Insets;
 import java.awt.event.ActionEvent;
 import java.awt.event.ActionListener;
 import java.awt.event.KeyAdapter;
 import java.awt.event.KeyEvent;
 import java.awt.event.MouseAdapter;
 import java.awt.event.MouseEvent;
+import java.awt.event.WindowAdapter;
+import java.awt.event.WindowEvent;
+import java.util.ArrayList;
+import java.util.HashMap;
+import java.util.List;
+import java.util.Map.Entry;
 
 public class GUI extends JFrame implements ActionListener {
-
+	private static final long serialVersionUID = -198111177139175434L;
+	
 	private JFrame mainWindow = new JFrame(); //The desktop window for the application.
-	private JFrame newgameWindow; //The popup window for creating a new game.
+	private JFrame newgameWindow, gameoverWindow; //The popup window for creating a new game.
 	private JTextField statusBarField; //The status field, used to always show errors and information.
 	
 	private JList<String> gameList, choicesList; //Reference to the list showing available games and the list showing possible choices in game.
 	private JTextField loginField, chatField, questionField, answerField, gamenameField, numPlayersField, numRoundsField; //References to necessary textfields for getting written input.
-	private JTextArea receivedMessagesArea; //Reference to the text area containing received chat messages.
-	private JLabel requestStartLabel; //Reference to the label keeping track of how many players are ready in a game.
-	private JButton loginButton, answerButton, choiceButton; //Reference to buttons for disable and enabling.
+	private JTextArea receivedMessagesArea, scoreArea; //Reference to the text areas.
+	private JLabel requestStartLabel, correctAnswerLabel; //Reference to the labels.
+	private JButton loginButton, newgameButton, answerButton, choiceButton; //Reference to buttons for disable and enabling.
 	private JPanel choicePhasePanel; //Reference to the panel showing possible answers to a question.
 	
 	private CardLayout stateManager, gamePhaseManager; //The layoutmanagers that controls the current state of the GUI.
@@ -32,15 +59,12 @@ public class GUI extends JFrame implements ActionListener {
 	private JPanel loginState, joingameState, pregameState, gameState; //The different states of the GUI.
 	
 	private Client client; //Reference to the client for given input to the client.
+	private boolean hasRequestedStart = false;
 	
 	public static final String LOGINSTATE = "LOGIN", JOINGAMESTATE = "JOIN", PREGAMESTATE = "PREGAME", GAMESTATE = "GAME"; //Constants for the possible GUI states.
 	
-	/*
-	 * TODO Create a possible status line in the main window.
-	 */
-	
 	public GUI(Client client) {
-		this.client = client; //TODO Communicate with the Client.
+		this.client = client;
 		
 		setUpMainWindow();
 		setUpLoginState(); //Creates the join game state.
@@ -52,18 +76,9 @@ public class GUI extends JFrame implements ActionListener {
 		setUpGameState(); //Creates the game state.
 		statePanel.add(gameState, GAMESTATE); //Adds the game state as a possible state.
 		setUpNewGamePopup(); //Creates the newgame popup window. Doesn't show it.
+		setUpGameoverPopup(); //Creates the gameover popup window. Doesn't show it.
 		
 		mainWindow.setVisible(true);
-		
-		//TODO Everything below only for TESTING PURPOSES. SHOULD BE REMOVED before finalization.
-		changeGUIState(LOGINSTATE); //Changes to the game state.
-		String[] list = {"One", "Two", "Three", "Foo", "Bar", "Foobar"};
-		refreshGameList(list);
-		receiveQuestion("The Canary Islands in the Pacific are named after what animal?");
-		refreshChoicesList(list);
-		nextGamePhase();
-		showNewgame();
-		statusMessage("This is an error message", true);
 	}
 
 	//Methods for constructing the GUI.
@@ -99,6 +114,7 @@ public class GUI extends JFrame implements ActionListener {
 		return statusBarPanel;
 	}
 	
+	@SuppressWarnings("serial")
 	private void setUpLoginState(){ //Sets up the login state. Anything regarding the setup of the login state and its elements goes here.
 		loginState = new JPanel();
 		loginState.setLayout(new BoxLayout(loginState, BoxLayout.Y_AXIS));
@@ -112,6 +128,16 @@ public class GUI extends JFrame implements ActionListener {
 		loginField = new JTextField();
 		loginField.setMaximumSize(
 				new Dimension(200, loginField.getPreferredSize().height));
+		
+		//Anonymous class that listens for key presses on the game list.
+		loginField.addKeyListener(new KeyAdapter(){
+			@Override
+			public void keyPressed(KeyEvent e) {
+				//Implements to login on pressing ENTER.
+				if (e.getKeyCode() == KeyEvent.VK_ENTER)
+					sendLogin(loginField.getText());
+			}
+		});
 		
 		//Anonymous class to limit the number of characters that can be entered into the textfield.
 		loginField.setDocument(new PlainDocument(){
@@ -150,8 +176,7 @@ public class GUI extends JFrame implements ActionListener {
 		gameList.addListSelectionListener(new ListSelectionListener(){
 		    @Override  
 			public void valueChanged(ListSelectionEvent e) {
-		        //TODO Can implement to join game on selection.
-		    	System.out.println(gameList.getSelectedValue()+" was selected.");
+		        //Can implement to join game on selection. Does nothing right now.
 		    }
 		});
 		
@@ -159,8 +184,9 @@ public class GUI extends JFrame implements ActionListener {
 		gameList.addMouseListener(new MouseAdapter(){
 			@Override
 			public void mouseClicked(MouseEvent e) {
-				//TODO Can implement to join game on double click.
-				System.out.println(gameList.getSelectedValue()+" was clicked.");
+				//Implements to join game on double click.
+				if (1 < e.getClickCount())
+					sendJoingame(gameList.getSelectedValue());
 			}
 		});
 		
@@ -168,8 +194,9 @@ public class GUI extends JFrame implements ActionListener {
 		gameList.addKeyListener(new KeyAdapter(){
 			@Override
 			public void keyPressed(KeyEvent e) {
-				//TODO Can implement to join game on pressing ENTER.
-				System.out.println(gameList.getSelectedValue()+" was key pressed.");
+				//Implements to join game on pressing ENTER after selecting.
+				if (e.getKeyCode() == KeyEvent.VK_ENTER)
+					sendJoingame(gameList.getSelectedValue());
 			}
 		});
 		
@@ -179,14 +206,19 @@ public class GUI extends JFrame implements ActionListener {
 		scrollingList.setVerticalScrollBarPolicy(JScrollPane.VERTICAL_SCROLLBAR_AS_NEEDED);
 		
 		//Create a join game button.
+		JButton refreshButton = createNewButton("Refresh Games", "refresh");
+		centerElement(refreshButton);
+		
+		//Create a join game button.
 		JButton joingameButton = createNewButton("Join Game", "joingame");
 		centerElement(joingameButton);
 		
 		//Create a new game button.
-		JButton newGameButton = createNewButton("New Game", "newgame");
+		JButton newGameButton = createNewButton("New Game", "shownewgame");
 		centerElement(newGameButton);
 		
 		joingameState.add(scrollingList);
+		joingameState.add(refreshButton);
 		joingameState.add(joingameButton);
 		joingameState.add(newGameButton);
 	}
@@ -256,7 +288,7 @@ public class GUI extends JFrame implements ActionListener {
 		JLabel scoreLabel = new JLabel("Scores:");
 		scoreLabel.setHorizontalAlignment(JLabel.CENTER);
 		JPanel scorePanel = new JPanel(new BorderLayout());
-		JTextArea scoreArea = new JTextArea();
+		scoreArea = new JTextArea();
 		scoreArea.setEditable(false);
 		scoreArea.setFocusable(false);
 		scoreArea.setPreferredSize(
@@ -311,7 +343,7 @@ public class GUI extends JFrame implements ActionListener {
 		numRoundsPanel.add(numRoundsField);
 		
 		//Create new game button.
-		JButton newgameButton = createNewButton("Create", "newgame");
+		newgameButton = createNewButton("Create", "newgame");
 		
 		//Add parts to main panel.
 		mainNewGamePanel.add(gamenamePanel);
@@ -323,12 +355,38 @@ public class GUI extends JFrame implements ActionListener {
 		newgameWindow.pack();
 	}
 	
+	private void setUpGameoverPopup(){ //Sets up the gameover popup window. Anything regarding the setup of the gameover popup window and its elements goes here.
+		//Create
+		gameoverWindow = new JFrame();
+		gameoverWindow.setResizable(false);
+		gameoverWindow.setDefaultCloseOperation(JFrame.HIDE_ON_CLOSE);
+		gameoverWindow.setLocationRelativeTo(null);
+		gameoverWindow.addWindowListener(new WindowAdapter(){
+			@Override
+			public void windowClosing(WindowEvent e) {
+				changeGUIState(GUI.JOINGAMESTATE);
+			}
+		});
+		
+		JPanel gameoverPanel = new JPanel(new BorderLayout());
+		JLabel gameoverLabel = new JLabel("Game Over");
+		gameoverLabel.setBorder(BorderFactory.createEmptyBorder(20, 20, 20, 20));
+		JButton returnButton = createNewButton("Return", "gameover");
+		centerElement(gameoverLabel);
+		centerElement(returnButton);
+		
+		gameoverPanel.add(gameoverLabel, BorderLayout.CENTER);
+		gameoverPanel.add(returnButton, BorderLayout.SOUTH);
+		gameoverWindow.add(gameoverPanel);
+		gameoverWindow.pack();
+	}
+	
 	private JPanel createAnswerPhase(){ //Creates panel for the games answer phase.
 		JPanel answerPanel = new JPanel();
 		answerPanel.setLayout(new BoxLayout(answerPanel, BoxLayout.Y_AXIS));
 		
 		//Label for telling if correct answer was entered.
-		JLabel correctAnswerLabel = new JLabel("");
+		correctAnswerLabel = new JLabel("");
 		correctAnswerLabel.setHorizontalAlignment(JLabel.CENTER);
 		centerElement(correctAnswerLabel);
 		
@@ -394,21 +452,83 @@ public class GUI extends JFrame implements ActionListener {
 		comp.setAlignmentY(CENTER_ALIGNMENT);
 	}
 	
-	
 	//Methods for managing GUI elements.
 	private void changeGUIState(String state){
+		//String LOGINSTATE = "LOGIN", JOINGAMESTATE = "JOIN", PREGAMESTATE = "PREGAME", GAMESTATE = "GAME";
+		switch(state){
+		case LOGINSTATE:
+			resetLoginState();
+			break;
+		case JOINGAMESTATE:
+			threadRefreshGameList();
+			break;
+		case PREGAMESTATE:
+			resetPregameState();
+			client.startChatThread();
+			break;
+		case GAMESTATE:
+			resetGameState();
+			break;
+		}
 		stateManager.show(statePanel, state); //Changes to the game state. Check constants for possible states.
 	}
 	
+	private void threadRefreshGameList() { //Creates new thread to smoothly update game list.
+		Thread thread = new Thread(){
+			@Override
+			public void run(){
+				sendGameListRequest();
+			}
+		};
+		thread.start();
+	}
+	
+	@SuppressWarnings("unused")
+	private void threadRefreshScoreArea() { //Creates new thread to smoothly update game list.
+		Thread thread = new Thread(){
+			@Override
+			public void run(){
+				sendScoreListRequest();
+			}
+		};
+		thread.start();
+	}
+
+	protected void sendGameListRequest() { //Called to request a new active games list.
+		try {
+			client.read(Tuple.SHOWGAMES);
+		} catch (Exception e) {
+			statusMessage(e.getMessage() ,true);
+		}
+	}
+	
+	protected void sendScoreListRequest() { //Called to request a new score list.
+		try {
+			client.read(Tuple.SCORES);
+		} catch (Exception e) {
+			statusMessage(e.getMessage());
+		}
+	}
+
 	private void nextGamePhase(){ //Rotates between answer and choices phase of the game.
 		gamePhaseManager.next(gamePanel);
 	}
 
 	private void showNewgame(){ //Shows the new game window.
+		gamenameField.setText("");
+		numPlayersField.setText("");
+		numRoundsField.setText("");
+		newgameWindow.setEnabled(true);
 		newgameWindow.setLocationRelativeTo(null);
+		newgameButton.setVisible(true);
 		newgameWindow.setVisible(true);
 	}
 
+	void showGameover() { //Shows the game over window.
+		gameoverWindow.setLocationRelativeTo(null);
+		gameoverWindow.setVisible(true);
+	}
+	
 	void statusMessage(String msg){
 		statusMessage(msg, false);
 	}
@@ -421,12 +541,20 @@ public class GUI extends JFrame implements ActionListener {
 		statusBarField.setText(msg);
 	}
 	
-	void refreshGameList(String[] list){ //Updates the game list with the game names in the given array. Always call before and during join game state.
+	void refreshGameList(List<?> gameNames){ //Updates the game list with the game names in the given array. Always call before and during join game state.
+		String list[] = gameNames.toArray(new String[gameNames.size()]);
 		gameList.setListData(list);
 	}
 
-	void refreshChoicesList(String[] list){ //Updates the answer choices with the answers in the given array. Always call before choice phase.
+	void refreshChoicesList(List<?> choices){ //Updates the answer choices with the answers in the given array. Always call before choice phase.
+		String list[] = choices.toArray(new String[choices.size()]);
 		choicesList.setListData(list);
+	}
+	
+	void refreshScoreArea(HashMap<?, ?> scores){
+		scoreArea.setText("Users with their corresponding score:\n");
+		for (Entry<?, ?> entry : scores.entrySet())
+			scoreArea.append(((String) entry.getKey()) + ": " + ((int) entry.getValue()) +"\n");
 	}
 	
 	private void resetLoginState(){ //Reset all manipulatable elements in the login state.
@@ -435,21 +563,60 @@ public class GUI extends JFrame implements ActionListener {
 		loginButton.setEnabled(true);
 	}
 	
-	private void resetChatState(){ //Reset all manipulatable elements in the chat state.
+	private void resetPregameState(){ //Reset all manipulatable elements in the pregame state.
+		hasRequestedStart = false;
 		chatField.setText("");
-		receivedMessagesArea.setText("");
-		requestStartLabel.setText("0/0");
+		receivedMessagesArea.setText("You can now chat with everyone in the game.\n"+
+									"When you are ready to begin the game press the 'Request Start Game' button.\n");
+		requestStartLabel.setText("");
+	}
+	
+	private void resetGameState(){ //Reset all manipulatable elements in the game state.
+		resetAnswerPhase();
+		resetChoosePhase();
+		sendScoreListRequest();
+		gamePhaseManager.show(gamePanel, "ANSWER");
 	}
 	
 	private void resetAnswerPhase(){ //Reset all manipulatable elements in the answer phase of the game.
+		answerField.setEnabled(false);
+		answerButton.setEnabled(false);
+		boolean needsNewQuestion = true;
 		answerField.setText("");
-		answerField.setEnabled(true);
-		answerButton.setEnabled(true);
+		correctAnswerLabel.setText("");
+		while(needsNewQuestion){
+			try {
+				client.read(Tuple.QUESTION);
+				needsNewQuestion = false;
+				answerField.setEnabled(true);
+				answerButton.setEnabled(true);
+			} catch (Exception e) {
+				statusMessage(e.getMessage(), true);
+			}
+		}
 	}
 	
 	private void resetChoosePhase(){ //Reset all manipulatable elements in the choice phase of the game.
 		choicesList.setEnabled(true);
 		choiceButton.setEnabled(true);
+	}
+	
+	void startGame() { //Starts a counter in the chat area and starts game after 5 seconds.
+		ActionListener action = new ActionListener(){
+			int count = 5;
+			
+			@Override
+			public void actionPerformed(ActionEvent e) {
+				receiveChatMessage(""+count);
+				count--;
+				if (count < 0){
+					changeGUIState(GUI.GAMESTATE);
+					((Timer)e.getSource()).stop();
+				}
+			}
+		};
+		Timer timer = new Timer(1000, action);
+		timer.start();
 	}
 	
 	void receiveChatMessage(String msg){ //Call with a given chat message to be printed to the receivedMessagesArea.
@@ -461,75 +628,141 @@ public class GUI extends JFrame implements ActionListener {
 	}
 	
 	private void sendMsg(String msg) { //Sends chat messages in the pre-game state.
-		//TODO Rewrite to send receive messages to receivedMessagesArea and have written messages sent as tuples.
-		receiveChatMessage(msg);
+		ArrayList<Object> data = new ArrayList<Object>();
+		data.add(hasRequestedStart);
+		data.add(msg);
+		if (msg.toLowerCase().equals("start"))
+			hasRequestedStart = true;
+		client.put(Tuple.STARTGAME, data);
+		
 		chatField.setText("");
 	}
 	
-	private void sendLogin(String username){
-		//TODO Send login to server.
-		System.out.println("Player is logging in as "+username);
-		loginField.setEnabled(false);
-		loginButton.setEnabled(false);
+	private void sendLogin(String userName){ //Sends login tuple to the server.
+		//Send login to server.
+		try {
+			loginField.setEnabled(false);
+			loginButton.setEnabled(false);
+			client.putread(Tuple.LOGIN, userName);
+			changeGUIState(GUI.JOINGAMESTATE);
+		} catch (Exception e) {
+			statusMessage(e.getMessage(), true);
+			loginField.setEnabled(true);
+			loginButton.setEnabled(true);
+		}
+		
 	}
 	
-	private void sendAnswer(String answer){ //Sends answer to server.
-		//TODO send answer to server.
-		System.out.println("Player is sending an answer.");
+	private void sendAnswer(String answer){ //Sends answer to server and moves on to choices phase.
 		answerField.setEnabled(false);
 		answerButton.setEnabled(false);
+		
+		try {
+			client.putread(Tuple.ANSWER, answer);
+		} catch (Exception e) {
+			correctAnswerLabel.setText(e.getMessage());
+			answerField.setEnabled(true);
+			answerButton.setEnabled(true);
+			return; //If answer is correct, don't go to next phase.
+		}
+		
+		try {
+			client.read(Tuple.CHOICES);
+			resetChoosePhase();
+			nextGamePhase();
+		} catch (Exception e) {
+			statusMessage(e.getMessage(), true);
+		}
 	}
 	
-	private void sendChoice(int choice){ //Sends answer to server.
-		//TODO send answer to server.
-		System.out.println("Player is sending an answer.");
+	private void sendChoice(int choice){ //Sends answer to server, refreshes scores and returns to answer phase.
 		choicesList.setEnabled(false);
 		choiceButton.setEnabled(false);
+		
+		client.put(Tuple.CHOOSE, choice++);
+		sendScoreListRequest();
+		
+		resetAnswerPhase();
+		nextGamePhase();
 	}
 	
-	private void sendNewgame(String gamename, int gameSize, int gameLength){ //Send new game request to server.
-		//TODO Send new game request to server.
-		System.out.println("Player wants to start a new game.");
-		System.out.println("Gamename: "+gamename+" Gamesize: "+gameSize+" GameLength: "+gameLength);
+	private void sendNewgame(String gameName, int gameSize, int gameLength){ //Send new game request to server.
+		ArrayList<Object> data = new ArrayList<Object>();
+		data.add(gameName);
+		data.add(gameSize);
+		data.add(gameLength);
+		try {
+			newgameWindow.setEnabled(false);
+			client.putread(Tuple.CREATEGAME, data);
+		} catch (Exception e) {
+			statusMessage(e.getMessage(), true);
+		}
+		sendJoingame(gameName);
 	}
 	
+	private void sendJoingame(String gameName) {
+		if (gameName == null)
+			return;
+		try {
+			joingameState.setEnabled(false);
+			client.putread(Tuple.JOINGAME, gameName);
+		} catch (Exception e) {
+			statusMessage(e.getMessage(), true);
+		}
+		changeGUIState(GUI.PREGAMESTATE);
+		joingameState.setEnabled(true);
+	}
+
 	//Listener methods.
 	@Override
 	public void actionPerformed(ActionEvent e) {
-		/*
-		 * TODO Create actions.
-		 */
 		switch (e.getActionCommand()) {
 		case "login":
+			//Send login tuple to server.
 			sendLogin(loginField.getText());
 			break;
+		case "shownewgame":
+			//Show newgame window.
+			showNewgame();
+			break;
 		case "newgame":
-			//TODO Handle invalid input!
-			sendNewgame(gamenameField.getText(), Integer.parseInt(numPlayersField.getText()), Integer.parseInt(numRoundsField.getText()));
+			//Send newgame tuple to server.
+			try {
+				sendNewgame(gamenameField.getText(), Integer.parseInt(numPlayersField.getText()), Integer.parseInt(numRoundsField.getText()));
+			} catch(NumberFormatException ex) {
+				statusMessage("NumberFormatException", true);
+			}
+			newgameWindow.dispatchEvent(new WindowEvent(newgameWindow, WindowEvent.WINDOW_CLOSING));
 			break;
 		case "joingame":
-			System.out.println("Player wants to join a game.");
-			
+			//Send join game tuple to server.
+			sendJoingame(gameList.getSelectedValue());
 			break;
 		case "startgame":
-			System.out.println("Player is requesting a start.");
-			
+			//Send start game request to server.
+			sendMsg("start");
 			break;
 		case "answer":
+			//Send answer tuple to server.
 			sendAnswer(answerField.getText());
 			break;
 		case "choose":
+			//Send a choice tuple to server.
 			sendChoice(choicesList.getSelectedIndex());
 			break;
 		case "send":
-			System.out.println("Player is sending a message.");
+			//Send a chat message to all players.
 			sendMsg(chatField.getText());
 			break;
-
+		case "refresh":
+			threadRefreshGameList();
+			break;
+		case "gameover":
+			//Closes the gameover window and changes gui state to joingame state.
+			gameoverWindow.dispatchEvent(new WindowEvent(gameoverWindow, WindowEvent.WINDOW_CLOSING));
+			break;
 		default:
 			break;
 		}
 	}
-	
-	
 }

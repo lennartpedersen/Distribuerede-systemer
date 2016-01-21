@@ -41,8 +41,10 @@ public class Client  {
 		//create the Client
 		client = new Client(hasGUI);
 		//start the connection to the Server.
-		if (!hasGUI)
-			client.start();	
+		if (hasGUI)
+			client.connect();
+		else
+			client.start();
 	}
 	
 	//Methods
@@ -53,14 +55,17 @@ public class Client  {
 			sInput  = new ObjectInputStream(socket.getInputStream());
 			sOutput = new ObjectOutputStream(socket.getOutputStream());
 		} catch (IOException e){
-			System.out.println("Connection to Server failed.");
+			if (gui != null)
+				gui.statusMessage("Connection to Server failed.", true);
+			else
+				System.out.println("Connection to Server failed.");
 			close();
 		}
 	}
 	
 	private void start() {
 		//Connect to server.
-		client.connect();
+		connect();
 		
 		//create reader for messages from user
 		scan = new BufferedReader(new InputStreamReader(System.in));
@@ -257,6 +262,11 @@ public class Client  {
 		}
 	}
 	
+	void startChatThread(){ //Create and start ChatThread.
+		chatThread = new ChatThread();
+		chatThread.start();
+	}
+	
 	private void startPhase() {
 		hasGameStarted = false;	
 		hasRequestedStart = false;
@@ -349,7 +359,7 @@ public class Client  {
 		return integer;
 	}
 
-	private void put(int command, Object data) { // Sends data
+	void put(int command, Object data) { // Sends data
 		Tuple tuple = new Tuple(command);
 		tuple.put(data);
 		try {
@@ -362,7 +372,7 @@ public class Client  {
 		}
 	}
 
-	private void read(int command) throws Exception { // Requests a response
+	void read(int command) throws Exception { // Requests a response
 		Tuple tuple = new Tuple(command);
 		try {
 			sOutput.writeObject(tuple);
@@ -375,7 +385,7 @@ public class Client  {
 		}
 	}
 
-	private void putread(int command, Object data) throws Exception { // Sends data and waits for response
+	void putread(int command, Object data) throws Exception { // Sends data and waits for response
 		Tuple tuple = new Tuple(command);
 		tuple.put(data);
 		try {
@@ -427,8 +437,12 @@ public class Client  {
 			case Tuple.ERROR:
 				throw ((Exception) tuple.getData());
 			default: // LOGIN, CREATEGAME, JOINGAME, STARTGAME, QUESTION
-				if (tuple.getData() != null)
-					System.out.println((String) tuple.getData());
+				if (tuple.getData() != null){
+					if (gui != null)
+						gui.statusMessage((String) tuple.getData());
+					else
+						System.out.println((String) tuple.getData());
+				}
 				break;
 			}
 		} catch(IOException e) {
@@ -443,8 +457,10 @@ public class Client  {
 
 	private void printGames(List<?> gameNames) {
 		if (gui != null){
-			String list[] = (String[]) gameNames.toArray();
-			gui.refreshGameList(list);
+			if (gameNames.isEmpty())
+				gui.statusMessage("No available games.");
+			else
+				gui.refreshGameList(gameNames);
 		} else {
 			if (gameNames.isEmpty())
 				System.out.println("No available games.");
@@ -457,8 +473,8 @@ public class Client  {
 	private void startGame(String msg) {
 		if (gui != null){
 			if (msg.equals("start")) {
-				gui.receiveChatMessage("Game starting! Wish your opponents good luck!");
-				hasGameStarted = true;
+				gui.receiveChatMessage("Game starting!");
+				gui.startGame();
 				try {
 					chatThread.join();
 				} catch (InterruptedException e) {
@@ -481,61 +497,84 @@ public class Client  {
 	}
 
 	private void printQuestion(String question) {
-		if (question.equals("Game over."))
-			isGameOver = true;
-		
-		System.out.println(question);
+		if (gui != null){
+			if (question.equals("Game over."))
+				gui.showGameover();
+			else
+				gui.receiveQuestion(question);
+		} else {
+			if (question.equals("Game over."))
+				isGameOver = true;
+			System.out.println(question);
+		}
 	}
 	
 	private void printChoices(List<?> choices) {
-		int i = 0;
-		for (Object choice : choices) {
-			System.out.println(++i + ": " + (String) choice);
+		if (gui != null)
+			gui.refreshChoicesList(choices);
+		else {
+			int i = 0;
+			for (Object choice : choices) {
+				System.out.println(++i + ": " + (String) choice);
+			}
+			players = choices.size();
 		}
-		players = choices.size();
 	}
 
 	private void printScores(HashMap<?,?> scores) {
-		System.out.println("Users with their corresponding score:");
-		
-		for (Entry<?, ?> entry : scores.entrySet())
-			System.out.println((String) entry.getKey() + ": " + (int) entry.getValue());
+		if (gui != null){
+			gui.refreshScoreArea(scores);
+		} else {
+			System.out.println("Users with their corresponding score:");
+			for (Entry<?, ?> entry : scores.entrySet())
+				System.out.println((String) entry.getKey() + ": " + (int) entry.getValue());
+		}
+	}
+	
+	void ChatThreadRunning(){
+		while (!socket.isClosed()) {
+			try {
+				Tuple tuple = (Tuple) sInput.readObject();
+				
+				int cmdReceived = tuple.getCommand();
+				
+				switch (cmdReceived) {
+				case Tuple.SHOWGAMES:
+					printGames((List<?>) tuple.getData());
+					break;
+				case Tuple.STARTGAME:
+					startGame((String) tuple.getData());
+					break;
+				case Tuple.QUESTION:
+					printQuestion((String) tuple.getData());
+					break;
+				case Tuple.CHOICES: // Server returns choices as List<String>
+					printChoices((List<?>) tuple.getData());
+					break;
+				case Tuple.SCORES: // Server returns scores as HashMap<User, Integer>
+					printScores((HashMap<?, ?>) tuple.getData());
+					break;
+				case Tuple.ERROR:
+					throw ((Exception) tuple.getData());
+				case Tuple.MESSAGE: // LOGIN, CREATEGAME, JOINGAME, STARTGAME, QUESTION, MESSAGE
+					if (gui != null)
+						gui.receiveChatMessage((String) tuple.getData());
+					else
+						System.out.println((String) tuple.getData());
+					break;
+				}
+			} catch (Exception e) {
+				if (gui != null)
+					gui.statusMessage(e.getMessage(), true);
+				else
+					System.out.println(e.getMessage());
+			}
+		}
 	}
 	
 	class ChatThread extends Thread {
 		public void run() {
-			while (!socket.isClosed()) {
-				try {
-					Tuple tuple = (Tuple) sInput.readObject();
-					
-					int cmdReceived = tuple.getCommand();
-					
-					switch (cmdReceived) {
-					case Tuple.SHOWGAMES:
-						printGames((List<?>) tuple.getData());
-						break;
-					case Tuple.STARTGAME:
-						startGame((String) tuple.getData());
-						break;
-					case Tuple.QUESTION:
-						printQuestion((String) tuple.getData());
-						break;
-					case Tuple.CHOICES: // Server returns choices as List<String>
-						printChoices((List<?>) tuple.getData());
-						break;
-					case Tuple.SCORES: // Server returns scores as HashMap<User, Integer>
-						printScores((HashMap<?, ?>) tuple.getData());
-						break;
-					case Tuple.ERROR:
-						throw ((Exception) tuple.getData());
-					case Tuple.MESSAGE: // LOGIN, CREATEGAME, JOINGAME, STARTGAME, QUESTION, MESSAGE
-						System.out.println((String) tuple.getData());
-						break;
-					}
-				} catch (Exception e) {
-					System.out.println(e.getMessage());
-				}
-			}
+			ChatThreadRunning();
 		}
 	}
 	
