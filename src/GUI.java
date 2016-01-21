@@ -1,6 +1,7 @@
 import javax.swing.BorderFactory;
 import javax.swing.Box;
 import javax.swing.BoxLayout;
+import javax.swing.DefaultListModel;
 import javax.swing.JButton;
 import javax.swing.JComponent;
 import javax.swing.JFrame;
@@ -292,7 +293,7 @@ public class GUI extends JFrame implements ActionListener {
 		scoreArea.setEditable(false);
 		scoreArea.setFocusable(false);
 		scoreArea.setPreferredSize(
-				new Dimension(200, scoreArea.getPreferredSize().height));
+				new Dimension(220, scoreArea.getPreferredSize().height));
 		scorePanel.add(scoreLabel, BorderLayout.NORTH);
 		scorePanel.add(scoreArea, BorderLayout.CENTER);
 		//GamePanel
@@ -426,6 +427,14 @@ public class GUI extends JFrame implements ActionListener {
 		choicesList = new JList<String>();
 		choicesList.setSelectionMode(ListSelectionModel.SINGLE_SELECTION);
 		
+		//TODO
+		/*choicesList.addListSelectionListener(new ListSelectionListener(){
+			@Override
+			public void valueChanged(ListSelectionEvent e) {
+				System.out.println(choicesList.getSelectedIndex());
+			}
+		});*/
+		
 		//Creates a new scrollpane to allow scrolling in the answer list, if necessary.
 		JScrollPane scrollingChoicesList = new JScrollPane(choicesList);
 		scrollingChoicesList.setHorizontalScrollBarPolicy(JScrollPane.HORIZONTAL_SCROLLBAR_AS_NEEDED);
@@ -520,13 +529,13 @@ public class GUI extends JFrame implements ActionListener {
 		numPlayersField.setText("");
 		numRoundsField.setText("");
 		newgameWindow.setEnabled(true);
-		newgameWindow.setLocationRelativeTo(null);
+		newgameWindow.setLocationRelativeTo(mainWindow);
 		newgameButton.setVisible(true);
 		newgameWindow.setVisible(true);
 	}
 
 	void showGameover() { //Shows the game over window.
-		gameoverWindow.setLocationRelativeTo(null);
+		gameoverWindow.setLocationRelativeTo(mainWindow);
 		gameoverWindow.setVisible(true);
 	}
 	
@@ -544,7 +553,11 @@ public class GUI extends JFrame implements ActionListener {
 	
 	void refreshGameList(List<?> gameNames){ //Updates the game list with the game names in the given array. Always call before and during join game state.
 		String list[] = gameNames.toArray(new String[gameNames.size()]);
-		gameList.setListData(list);
+		DefaultListModel<String> model = new DefaultListModel<String>();
+		for (String str : list)
+			model.addElement(str);
+		gameList.clearSelection();
+		gameList.setModel(model);
 	}
 
 	void refreshChoicesList(List<?> choices){ //Updates the answer choices with the answers in the given array. Always call before choice phase.
@@ -578,7 +591,7 @@ public class GUI extends JFrame implements ActionListener {
 	private void resetGameState(){ //Reset all manipulatable elements in the game state.
 		resetAnswerPhase();
 		resetChoosePhase();
-		sendScoreListRequest();
+		scoreArea.setText("Users with their corresponding score:\n");
 		gamePhaseManager.show(gamePanel, "ANSWER");
 	}
 	
@@ -683,10 +696,12 @@ public class GUI extends JFrame implements ActionListener {
 	}
 	
 	private void sendChoice(int choice){ //Sends answer to server, refreshes scores and returns to answer phase.
+		if (choice < 0)
+			return;
 		choicesList.setEnabled(false);
 		choiceButton.setEnabled(false);
-		
-		client.put(Tuple.CHOOSE, choice++);
+		choice = choice+1;
+		client.put(Tuple.CHOOSE, choice);
 		sendScoreListRequest();
 		
 		resetAnswerPhase();
