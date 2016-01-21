@@ -454,8 +454,7 @@ public class Client  {
 		if (gui != null){
 			if (gameNames.isEmpty())
 				gui.statusMessage("No available games.");
-			else
-				gui.refreshGameList(gameNames);
+			gui.refreshGameList(gameNames);
 		} else {
 			if (gameNames.isEmpty())
 				System.out.println("No available games.");
