@@ -44,7 +44,7 @@ public class GUI extends JFrame implements ActionListener {
 	private static final long serialVersionUID = -198111177139175434L;
 	
 	private JFrame mainWindow = new JFrame(); //The desktop window for the application.
-	private JFrame newgameWindow, gameoverWindow; //The popup window for creating a new game.
+	private JFrame newgameWindow, gameoverWindow, errorWindow; //The popup window for creating a new game.
 	private JTextField statusBarField; //The status field, used to always show errors and information.
 	
 	private JList<String> gameList, choicesList; //Reference to the list showing available games and the list showing possible choices in game.
@@ -78,6 +78,7 @@ public class GUI extends JFrame implements ActionListener {
 		statePanel.add(gameState, GAMESTATE); //Adds the game state as a possible state.
 		setUpNewGamePopup(); //Creates the newgame popup window. Doesn't show it.
 		setUpGameoverPopup(); //Creates the gameover popup window. Doesn't show it.
+		setUpErrorPopUp();
 		
 		mainWindow.setVisible(true);
 	}
@@ -382,6 +383,26 @@ public class GUI extends JFrame implements ActionListener {
 		gameoverWindow.pack();
 	}
 	
+	private void setUpErrorPopUp() {
+		//Create
+		errorWindow = new JFrame();
+		errorWindow.setResizable(false);
+		errorWindow.setDefaultCloseOperation(JFrame.HIDE_ON_CLOSE);
+		errorWindow.setLocationRelativeTo(null);
+		
+		JPanel errorPanel = new JPanel(new BorderLayout());
+		JLabel errorLabel = new JLabel("Connection to Server failed.");
+		errorLabel.setBorder(BorderFactory.createEmptyBorder(20, 20, 20, 20));
+		JButton closeButton = createNewButton("Close", "quit");
+		centerElement(errorLabel);
+		centerElement(closeButton);
+		
+		errorPanel.add(errorLabel, BorderLayout.CENTER);
+		errorPanel.add(closeButton, BorderLayout.SOUTH);
+		errorWindow.add(errorPanel);
+		errorWindow.pack();
+	}
+	
 	private JPanel createAnswerPhase(){ //Creates panel for the games answer phase.
 		JPanel answerPanel = new JPanel();
 		answerPanel.setLayout(new BoxLayout(answerPanel, BoxLayout.Y_AXIS));
@@ -537,6 +558,11 @@ public class GUI extends JFrame implements ActionListener {
 	void showGameover() { //Shows the game over window.
 		gameoverWindow.setLocationRelativeTo(mainWindow);
 		gameoverWindow.setVisible(true);
+	}
+	
+	void showError() { //Shows the game over window.
+		errorWindow.setLocationRelativeTo(mainWindow);
+		errorWindow.setVisible(true);
 	}
 	
 	void statusMessage(String msg){
@@ -786,6 +812,11 @@ public class GUI extends JFrame implements ActionListener {
 		case "gameover":
 			//Closes the gameover window and changes gui state to joingame state.
 			gameoverWindow.dispatchEvent(new WindowEvent(gameoverWindow, WindowEvent.WINDOW_CLOSING));
+			break;
+		case "quit":
+			//Quit application by closing windows.
+			errorWindow.dispatchEvent(new WindowEvent(errorWindow, WindowEvent.WINDOW_CLOSING));
+			mainWindow.dispatchEvent(new WindowEvent(mainWindow, WindowEvent.WINDOW_CLOSING));
 			break;
 		default:
 			break;

@@ -53,10 +53,11 @@ public class Client  {
 			sInput  = new ObjectInputStream(socket.getInputStream());
 			sOutput = new ObjectOutputStream(socket.getOutputStream());
 		} catch (IOException e){
-			if (gui != null)
+			if (gui != null){
 				gui.statusMessage("Connection to Server failed.", true);
-			else
-				System.out.println("Connection to Server failed.");
+				gui.showError();
+			}
+			System.out.println("Connection to Server failed.");
 			close();
 		}
 	}
@@ -361,8 +362,10 @@ public class Client  {
 			sOutput.writeObject(tuple);
 		} catch (IOException e) {
 			e.printStackTrace();
-			if (gui != null)
+			if (gui != null){
 				gui.statusMessage("Connection to server lost!", true);
+				gui.showError();
+			}
 			close();
 		}
 	}
@@ -374,8 +377,10 @@ public class Client  {
 			listenFromServer(command);
 		} catch (IOException e) {
 			e.printStackTrace();
-			if (gui != null)
+			if (gui != null){
 				gui.statusMessage("Connection to server lost!", true);
+				gui.showError();
+			}
 			close();
 		}
 	}
@@ -388,8 +393,10 @@ public class Client  {
 			listenFromServer(command);
 		} catch (IOException e) {
 			e.printStackTrace(); // OS, IS, Socket
-			if (gui != null)
+			if (gui != null){
 				gui.statusMessage("Connection to server lost!", true);
+				gui.showError();
+			}
 			close();
 		}
 	}
@@ -443,6 +450,7 @@ public class Client  {
 		} catch(IOException e) {
 			if (gui != null){
 				gui.statusMessage(e.getMessage(), true);
+				gui.showError();
 			} else {
 				e.printStackTrace();
 			}
