@@ -81,7 +81,6 @@ public class Game {
 
 		// if correct answer
 		if (cAnswer.equals(uAnswer)) {
-			user.incrementScore(3);
 			user.setCorrect(true);
 
 			throw new Exception("Correct answer. Provide incorrect answer");
@@ -135,8 +134,10 @@ public class Game {
 			int answer = user.getIndex();
 			int choice = user.getChoice();
 
-			if (user.isCorrect())
+			if (user.isCorrect()){
+				user.incrementScore(3);
 				user.setCorrect(false); // No points for choosing if already answered correctly
+			}
 			else if (choice == answer)
 				; // What happens if user chooses own answer?
 			else if (choice == correct)
