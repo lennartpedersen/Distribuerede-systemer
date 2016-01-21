@@ -40,9 +40,8 @@ public class Client  {
 		//create the Client
 		client = new Client(hasGUI);
 		//start the connection to the Server.
-		if (hasGUI)
-			client.connect();
-		else
+		client.connect();
+		if (!hasGUI)
 			client.start();
 	}
 	
@@ -63,9 +62,6 @@ public class Client  {
 	}
 	
 	private void start() {
-		//Connect to server.
-		connect();
-		
 		//create reader for messages from user
 		scan = new BufferedReader(new InputStreamReader(System.in));
 		
