@@ -17,12 +17,13 @@ public class GUI extends JFrame implements ActionListener {
 
 	private JFrame mainWindow = new JFrame(); //The desktop window for the application.
 	private JFrame newgameWindow; //The popup window for creating a new game.
+	private JTextField statusBarField; //The status field, used to always show errors and information.
 	
 	private JList<String> gameList, choicesList; //Reference to the list showing available games and the list showing possible choices in game.
 	private JTextField loginField, chatField, questionField, answerField, gamenameField, numPlayersField, numRoundsField; //References to necessary textfields for getting written input.
 	private JTextArea receivedMessagesArea; //Reference to the text area containing received chat messages.
 	private JLabel requestStartLabel; //Reference to the label keeping track of how many players are ready in a game.
-	private JButton answerButton, choiceButton; //Reference to buttons for disable and enabling.
+	private JButton loginButton, answerButton, choiceButton; //Reference to buttons for disable and enabling.
 	private JPanel choicePhasePanel; //Reference to the panel showing possible answers to a question.
 	
 	private CardLayout stateManager, gamePhaseManager; //The layoutmanagers that controls the current state of the GUI.
@@ -55,13 +56,14 @@ public class GUI extends JFrame implements ActionListener {
 		mainWindow.setVisible(true);
 		
 		//TODO Everything below only for TESTING PURPOSES. SHOULD BE REMOVED before finalization.
-		changeGUIState(GAMESTATE); //Changes to the game state.
+		changeGUIState(LOGINSTATE); //Changes to the game state.
 		String[] list = {"One", "Two", "Three", "Foo", "Bar", "Foobar"};
 		refreshGameList(list);
 		receiveQuestion("The Canary Islands in the Pacific are named after what animal?");
 		refreshChoicesList(list);
 		nextGamePhase();
 		showNewgame();
+		statusMessage("This is an error message", true);
 	}
 
 	//Methods for constructing the GUI.
@@ -70,10 +72,31 @@ public class GUI extends JFrame implements ActionListener {
 		mainWindow.setResizable(false);
 		mainWindow.setDefaultCloseOperation(EXIT_ON_CLOSE);
 		mainWindow.setLocationRelativeTo(null);
+		mainWindow.setLayout(new BorderLayout());
+		
+		//Panel to contain the main application GUI.
+		JPanel mainWindowPanel = new JPanel();
 		stateManager = new CardLayout();
-		mainWindow.setLayout(stateManager);
+		mainWindowPanel.setLayout(stateManager);
 		statePanel = new JPanel(stateManager);
-		mainWindow.add(statePanel);
+		
+		mainWindowPanel.add(statePanel);
+		mainWindow.add(mainWindowPanel);
+		mainWindow.add(newStatusBar(), BorderLayout.SOUTH);
+	}
+	
+	private JPanel newStatusBar(){
+		JPanel statusBarPanel = new JPanel(new BorderLayout());
+		
+		//Create status bar as textfield.
+		statusBarField = new JTextField();
+		statusBarField.setEditable(false);
+		statusBarField.setFocusable(false);
+		statusBarField.setMaximumSize(
+				new Dimension(Integer.MAX_VALUE, statusBarField.getPreferredSize().height));
+		
+		statusBarPanel.add(statusBarField);
+		return statusBarPanel;
 	}
 	
 	private void setUpLoginState(){ //Sets up the login state. Anything regarding the setup of the login state and its elements goes here.
@@ -105,12 +128,14 @@ public class GUI extends JFrame implements ActionListener {
 		centerElement(loginField);
 		
 		//Creates and configures login button.
-		JButton loginButton = createNewButton("Login", "login");
+		loginButton = createNewButton("Login", "login");
 		centerElement(loginButton);
 		
+		loginState.add(Box.createVerticalGlue());
 		loginState.add(username);
 		loginState.add(loginField);
 		loginState.add(loginButton);
+		loginState.add(Box.createVerticalGlue());
 	}
 	
 	private void setUpJoinGameState() { //Sets up the join game state. Anything regarding the setup of the join game state and its elements goes here.
@@ -384,16 +409,30 @@ public class GUI extends JFrame implements ActionListener {
 		newgameWindow.setVisible(true);
 	}
 
-	private void refreshGameList(String[] list){ //Updates the game list with the game names in the given array. Always call before and during join game state.
+	void statusMessage(String msg){
+		statusMessage(msg, false);
+	}
+	
+	void statusMessage(String msg, boolean isError){
+		if (isError)
+			statusBarField.setForeground(Color.RED);
+		else
+			statusBarField.setForeground(Color.BLACK);
+		statusBarField.setText(msg);
+	}
+	
+	void refreshGameList(String[] list){ //Updates the game list with the game names in the given array. Always call before and during join game state.
 		gameList.setListData(list);
 	}
 
-	private void refreshChoicesList(String[] list){ //Updates the answer choices with the answers in the given array. Always call before choice phase.
+	void refreshChoicesList(String[] list){ //Updates the answer choices with the answers in the given array. Always call before choice phase.
 		choicesList.setListData(list);
 	}
 	
 	private void resetLoginState(){ //Reset all manipulatable elements in the login state.
 		loginField.setText("");
+		loginField.setEnabled(true);
+		loginButton.setEnabled(true);
 	}
 	
 	private void resetChatState(){ //Reset all manipulatable elements in the chat state.
@@ -413,11 +452,11 @@ public class GUI extends JFrame implements ActionListener {
 		choiceButton.setEnabled(true);
 	}
 	
-	private void receiveChatMessage(String msg){ //Call with a given chat message to be printed to the receivedMessagesArea.
+	void receiveChatMessage(String msg){ //Call with a given chat message to be printed to the receivedMessagesArea.
 		receivedMessagesArea.append(msg + "\n");
 	}
 	
-	private void receiveQuestion(String question){ //Prints given question to the questionField.
+	void receiveQuestion(String question){ //Prints given question to the questionField.
 		questionField.setText(question);
 	}
 	
@@ -425,6 +464,13 @@ public class GUI extends JFrame implements ActionListener {
 		//TODO Rewrite to send receive messages to receivedMessagesArea and have written messages sent as tuples.
 		receiveChatMessage(msg);
 		chatField.setText("");
+	}
+	
+	private void sendLogin(String username){
+		//TODO Send login to server.
+		System.out.println("Player is logging in as "+username);
+		loginField.setEnabled(false);
+		loginButton.setEnabled(false);
 	}
 	
 	private void sendAnswer(String answer){ //Sends answer to server.
@@ -454,6 +500,9 @@ public class GUI extends JFrame implements ActionListener {
 		 * TODO Create actions.
 		 */
 		switch (e.getActionCommand()) {
+		case "login":
+			sendLogin(loginField.getText());
+			break;
 		case "newgame":
 			//TODO Handle invalid input!
 			sendNewgame(gamenameField.getText(), Integer.parseInt(numPlayersField.getText()), Integer.parseInt(numRoundsField.getText()));
