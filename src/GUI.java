@@ -50,7 +50,7 @@ public class GUI extends JFrame implements ActionListener {
 	private JTextField loginField, chatField, questionField, answerField, gamenameField, numPlayersField, numRoundsField; //References to necessary textfields for getting written input.
 	private JTextArea receivedMessagesArea, scoreArea; //Reference to the text areas.
 	private JLabel requestStartLabel, correctAnswerLabel; //Reference to the labels.
-	private JButton loginButton, newgameButton, answerButton, choiceButton; //Reference to buttons for disable and enabling.
+	private JButton loginButton, newgameButton, answerButton, choiceButton, sendButton, requestStartButton; //Reference to buttons for disable and enabling.
 	private JPanel choicePhasePanel; //Reference to the panel showing possible answers to a question.
 	
 	private CardLayout stateManager, gamePhaseManager; //The layoutmanagers that controls the current state of the GUI.
@@ -241,7 +241,7 @@ public class GUI extends JFrame implements ActionListener {
 		chatField = new JTextField();
 		chatField.setMaximumSize(
 				new Dimension(Integer.MAX_VALUE, loginField.getPreferredSize().height));
-		JButton sendButton = createNewButton("Send", "send");
+		sendButton = createNewButton("Send", "send");
 		
 		//Anonymous class for listening to key presses in the chatfield.
 		chatField.addKeyListener(new KeyAdapter(){
@@ -254,7 +254,7 @@ public class GUI extends JFrame implements ActionListener {
 		});
 		
 		//Creates a request start of game button and label for showing how many players are ready.
-		JButton requestStartButton = createNewButton("Request Start Game", "startgame");
+		requestStartButton = createNewButton("Request Start Game", "startgame");
 		requestStartLabel = new JLabel("0/0");
 		
 		//GridBagConstraints
@@ -460,7 +460,7 @@ public class GUI extends JFrame implements ActionListener {
 			resetLoginState();
 			break;
 		case JOINGAMESTATE:
-			threadRefreshGameList();
+			sendGameListRequest();
 			break;
 		case PREGAMESTATE:
 			resetPregameState();
@@ -473,6 +473,7 @@ public class GUI extends JFrame implements ActionListener {
 		stateManager.show(statePanel, state); //Changes to the game state. Check constants for possible states.
 	}
 	
+	@SuppressWarnings("unused")
 	private void threadRefreshGameList() { //Creates new thread to smoothly update game list.
 		Thread thread = new Thread(){
 			@Override
@@ -565,6 +566,9 @@ public class GUI extends JFrame implements ActionListener {
 	
 	private void resetPregameState(){ //Reset all manipulatable elements in the pregame state.
 		hasRequestedStart = false;
+		requestStartButton.setEnabled(true);
+		sendButton.setEnabled(true);
+		chatField.setEnabled(true);
 		chatField.setText("");
 		receivedMessagesArea.setText("You can now chat with everyone in the game.\n"+
 									"When you are ready to begin the game press the 'Request Start Game' button.\n");
@@ -617,6 +621,9 @@ public class GUI extends JFrame implements ActionListener {
 		};
 		Timer timer = new Timer(1000, action);
 		timer.start();
+		sendButton.setEnabled(false);
+		chatField.setEnabled(false);
+		requestStartButton.setEnabled(false);
 	}
 	
 	void receiveChatMessage(String msg){ //Call with a given chat message to be printed to the receivedMessagesArea.
@@ -696,6 +703,8 @@ public class GUI extends JFrame implements ActionListener {
 			client.putread(Tuple.CREATEGAME, data);
 		} catch (Exception e) {
 			statusMessage(e.getMessage(), true);
+			newgameWindow.setEnabled(true);
+			return;
 		}
 		sendJoingame(gameName);
 	}
@@ -708,6 +717,8 @@ public class GUI extends JFrame implements ActionListener {
 			client.putread(Tuple.JOINGAME, gameName);
 		} catch (Exception e) {
 			statusMessage(e.getMessage(), true);
+			joingameState.setEnabled(true);
+			return;
 		}
 		changeGUIState(GUI.PREGAMESTATE);
 		joingameState.setEnabled(true);
@@ -755,7 +766,7 @@ public class GUI extends JFrame implements ActionListener {
 			sendMsg(chatField.getText());
 			break;
 		case "refresh":
-			threadRefreshGameList();
+			sendGameListRequest();
 			break;
 		case "gameover":
 			//Closes the gameover window and changes gui state to joingame state.
