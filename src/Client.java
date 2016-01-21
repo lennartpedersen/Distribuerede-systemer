@@ -37,110 +37,115 @@ public class Client  {
 	}
 	
 	public static void main(String[] args) throws IOException {
+		boolean hasGUI = true;
 		//create the Client
-		client = new Client(true);
+		client = new Client(hasGUI);
 		//start the connection to the Server.
-		client.start();	
+		if (!hasGUI)
+			client.start();	
 	}
 	
 	//Methods
-	private void start() {
-		//try to connect to the server.
+	private void connect(){
 		try {
 			socket = new Socket(server, port);
 			// creating data streams to receive and send data.
 			sInput  = new ObjectInputStream(socket.getInputStream());
 			sOutput = new ObjectOutputStream(socket.getOutputStream());
-			
-			//create reader for messages from user
-			scan = new BufferedReader(new InputStreamReader(System.in));
-			
-			loginPhase();
-			
-			while (true) {
-				
-				optionPhase();
-				
-				startPhase();
-				
-				while (true) { // gamePhase
-					
-					boolean hasQuestion = false,
-							hasAnswer = false,
-							hasChoices = false,
-							hasChoice = false,
-							hasScores = false;
-					
-					while (!hasQuestion) {
-						try {
-							client.read(Tuple.QUESTION);
-							hasQuestion = true;
-						} catch (Exception e) {
-							System.out.println(e.getMessage());
-						}
-					}
-
-					if (isGameOver)
-						break;
-
-					// Answer question
-					String answer = "";
-					
-					while (!hasAnswer) {
-						try {
-							answer = scan.readLine();
-							client.putread(Tuple.ANSWER, answer);
-							hasAnswer = true;
-						} catch (IOException e) {
-							System.out.println("Error reading line.");
-						} catch (Exception e) {
-							System.out.println(e.getMessage());
-							answer = getNewAnswer(answer.toLowerCase());
-							hasAnswer = true;
-						}
-					}
-					
-					
-					// Get choices from server
-					while (!hasChoices) {
-						try {
-							client.read(Tuple.CHOICES);
-							hasChoices = true;
-						} catch (Exception e) {
-							System.out.println(e.getMessage());
-						}
-					}
-
-					// Pick choice
-					System.out.println("Choose an answer by its number:");
-					int choice = 0;
-					while (!hasChoice) {
-						choice = getInteger();
-						if (choice <= 0 || choice > players)
-							System.out.println("Please choose a number between 1 and " + players);
-						else 
-							hasChoice = true;
-					}
-					
-					client.put(Tuple.CHOOSE, choice);
-					
-					while (!hasScores) {
-						try {
-							client.read(Tuple.SCORES);
-							hasScores = true;
-						} catch (Exception e) {
-							System.out.println(e.getMessage());
-						}
-					}
-					
-				} // End while (gameStarted)
-				
-			} // End while (true)
-			
-		} catch (IOException e) {
-			e.printStackTrace();
+		} catch (IOException e){
+			System.out.println("Connection to Server failed.");
 			close();
 		}
+	}
+	
+	private void start() {
+		//Connect to server.
+		client.connect();
+		
+		//create reader for messages from user
+		scan = new BufferedReader(new InputStreamReader(System.in));
+		
+		loginPhase();
+		
+		while (true) {
+			
+			optionPhase();
+			
+			startPhase();
+			
+			while (true) { // gamePhase
+				
+				boolean hasQuestion = false,
+						hasAnswer = false,
+						hasChoices = false,
+						hasChoice = false,
+						hasScores = false;
+				
+				while (!hasQuestion) {
+					try {
+						client.read(Tuple.QUESTION);
+						hasQuestion = true;
+					} catch (Exception e) {
+						System.out.println(e.getMessage());
+					}
+				}
+
+				if (isGameOver)
+					break;
+
+				// Answer question
+				String answer = "";
+				
+				while (!hasAnswer) {
+					try {
+						answer = scan.readLine();
+						client.putread(Tuple.ANSWER, answer);
+						hasAnswer = true;
+					} catch (IOException e) {
+						System.out.println("Error reading line.");
+					} catch (Exception e) {
+						System.out.println(e.getMessage());
+						answer = getNewAnswer(answer.toLowerCase());
+						hasAnswer = true;
+					}
+				}
+				
+				
+				// Get choices from server
+				while (!hasChoices) {
+					try {
+						client.read(Tuple.CHOICES);
+						hasChoices = true;
+					} catch (Exception e) {
+						System.out.println(e.getMessage());
+					}
+				}
+
+				// Pick choice
+				System.out.println("Choose an answer by its number:");
+				int choice = 0;
+				while (!hasChoice) {
+					choice = getInteger();
+					if (choice <= 0 || choice > players)
+						System.out.println("Please choose a number between 1 and " + players);
+					else 
+						hasChoice = true;
+				}
+				
+				client.put(Tuple.CHOOSE, choice);
+				
+				while (!hasScores) {
+					try {
+						client.read(Tuple.SCORES);
+						hasScores = true;
+					} catch (Exception e) {
+						System.out.println(e.getMessage());
+					}
+				}
+				
+			} // End while (gameStarted)
+			
+		} // End while (true)
 	}
 	
 	private void loginPhase() {
@@ -351,6 +356,8 @@ public class Client  {
 			sOutput.writeObject(tuple);
 		} catch (IOException e) {
 			e.printStackTrace();
+			if (gui != null)
+				gui.statusMessage("Connection to server lost!", true);
 			close();
 		}
 	}
@@ -362,6 +369,8 @@ public class Client  {
 			listenFromServer(command);
 		} catch (IOException e) {
 			e.printStackTrace();
+			if (gui != null)
+				gui.statusMessage("Connection to server lost!", true);
 			close();
 		}
 	}
@@ -374,6 +383,8 @@ public class Client  {
 			listenFromServer(command);
 		} catch (IOException e) {
 			e.printStackTrace(); // OS, IS, Socket
+			if (gui != null)
+				gui.statusMessage("Connection to server lost!", true);
 			close();
 		}
 	}
@@ -389,9 +400,12 @@ public class Client  {
 			
 			cmdReceived = tuple.getCommand();
 			
-			if (cmdReceived == Tuple.MESSAGE)
-				System.out.println((String) tuple.getData());
-			
+			if (cmdReceived == Tuple.MESSAGE){
+				if (gui != null)
+					gui.statusMessage((String) tuple.getData());
+				else
+					System.out.println((String) tuple.getData());
+			}
 			} while (!(cmdReceived == cmdSent || cmdReceived == Tuple.ERROR));
 			
 			switch (cmdReceived) {
@@ -418,30 +432,52 @@ public class Client  {
 				break;
 			}
 		} catch(IOException e) {
-			e.printStackTrace();
+			if (gui != null){
+				gui.statusMessage(e.getMessage(), true);
+			} else {
+				e.printStackTrace();
+			}
 		}
 		catch(ClassNotFoundException e2) {}
 	}
 
 	private void printGames(List<?> gameNames) {
-		if (gameNames.isEmpty())
-			System.out.println("No available games.");
-		else
-			for (Object gameName : gameNames)
-				System.out.println((String) gameName);
+		if (gui != null){
+			String list[] = (String[]) gameNames.toArray();
+			gui.refreshGameList(list);
+		} else {
+			if (gameNames.isEmpty())
+				System.out.println("No available games.");
+			else
+				for (Object gameName : gameNames)
+					System.out.println((String) gameName);
+		}
 	}
 	
 	private void startGame(String msg) {
-		if (msg.equals("start")) {
-			System.out.println("Game starting! Wish your opponents good luck!");
-			hasGameStarted = true;
-			try {
-				chatThread.join();
-			} catch (InterruptedException e) {
-				System.err.println("ChatThread interrupted current thread.");
-			}
-		} else
-			System.out.println(msg);
+		if (gui != null){
+			if (msg.equals("start")) {
+				gui.receiveChatMessage("Game starting! Wish your opponents good luck!");
+				hasGameStarted = true;
+				try {
+					chatThread.join();
+				} catch (InterruptedException e) {
+					System.err.println("ChatThread interrupted current thread.");
+				}
+			} else
+				gui.receiveChatMessage(msg);
+		} else {
+			if (msg.equals("start")) {
+				System.out.println("Game starting! Wish your opponents good luck!");
+				hasGameStarted = true;
+				try {
+					chatThread.join();
+				} catch (InterruptedException e) {
+					System.err.println("ChatThread interrupted current thread.");
+				}
+			} else
+				System.out.println(msg);
+		}
 	}
 
 	private void printQuestion(String question) {
