@@ -15,6 +15,7 @@ import javax.swing.ListSelectionModel;
 import javax.swing.Timer;
 import javax.swing.event.ListSelectionEvent;
 import javax.swing.event.ListSelectionListener;
+import javax.swing.plaf.basic.BasicArrowButton;
 import javax.swing.text.BadLocationException;
 import javax.swing.text.AttributeSet;
 import javax.swing.text.PlainDocument;
@@ -44,13 +45,13 @@ public class GUI extends JFrame implements ActionListener {
 	private static final long serialVersionUID = -198111177139175434L;
 	
 	private JFrame mainWindow = new JFrame(); //The desktop window for the application.
-	private JFrame newgameWindow, gameoverWindow; //The popup window for creating a new game.
+	private JFrame newgameWindow, gameoverWindow, errorWindow; //The popup window for creating a new game.
 	private JTextField statusBarField; //The status field, used to always show errors and information.
 	
 	private JList<String> gameList, choicesList; //Reference to the list showing available games and the list showing possible choices in game.
-	private JTextField loginField, chatField, questionField, answerField, gamenameField, numPlayersField, numRoundsField; //References to necessary textfields for getting written input.
+	private JTextField loginField, chatField, questionField, answerField, gamenameField; //References to necessary textfields for getting written input.
 	private JTextArea receivedMessagesArea, scoreArea; //Reference to the text areas.
-	private JLabel requestStartLabel, correctAnswerLabel; //Reference to the labels.
+	private JLabel requestStartLabel, correctAnswerLabel, numPlayersCounter, numRoundsCounter; //Reference to the labels.
 	private JButton loginButton, newgameButton, answerButton, choiceButton, sendButton, requestStartButton; //Reference to buttons for disable and enabling.
 	private JPanel choicePhasePanel; //Reference to the panel showing possible answers to a question.
 	
@@ -78,6 +79,7 @@ public class GUI extends JFrame implements ActionListener {
 		statePanel.add(gameState, GAMESTATE); //Adds the game state as a possible state.
 		setUpNewGamePopup(); //Creates the newgame popup window. Doesn't show it.
 		setUpGameoverPopup(); //Creates the gameover popup window. Doesn't show it.
+		setUpErrorPopUp();
 		
 		mainWindow.setVisible(true);
 	}
@@ -331,17 +333,17 @@ public class GUI extends JFrame implements ActionListener {
 		JPanel numPlayersPanel = new JPanel();
 		numPlayersPanel.setLayout(new BoxLayout(numPlayersPanel, BoxLayout.Y_AXIS));
 		JLabel numPlayersLabel = new JLabel("Maximum number of players:");
-		numPlayersField = new JTextField(); //TODO Should change to a real counter to avoid invalid input.
+		JPanel numPlayersCounterPanel = createNumPlayersCounter(); //TODO Should change to a real counter to avoid invalid input.
 		numPlayersPanel.add(numPlayersLabel);
-		numPlayersPanel.add(numPlayersField);
+		numPlayersPanel.add(numPlayersCounterPanel);
 		
 		//Panel for number of rounds label and counter.
 		JPanel numRoundsPanel = new JPanel();
 		numRoundsPanel.setLayout(new BoxLayout(numRoundsPanel, BoxLayout.Y_AXIS));
 		JLabel numRoundsLabel = new JLabel("Number of rounds:");
-		numRoundsField = new JTextField(); //TODO Should change to a real counter to avoid invalid input.
+		JPanel numRoundsCounterPanel = createNumRoundsPlayersCounter(); //TODO Should change to a real counter to avoid invalid input.
 		numRoundsPanel.add(numRoundsLabel);
-		numRoundsPanel.add(numRoundsField);
+		numRoundsPanel.add(numRoundsCounterPanel);
 		
 		//Create new game button.
 		newgameButton = createNewButton("Create", "newgame");
@@ -354,6 +356,76 @@ public class GUI extends JFrame implements ActionListener {
 		
 		newgameWindow.add(mainNewGamePanel);
 		newgameWindow.pack();
+	}
+	
+	private JPanel createNumPlayersCounter() {
+		JPanel numPlayersCounterPanel = new JPanel(new BorderLayout());
+		JButton reduce = new BasicArrowButton(BasicArrowButton.WEST);
+		numPlayersCounter = new JLabel("1");
+		centerElement(numPlayersCounter);
+		JButton increase = new BasicArrowButton(BasicArrowButton.EAST);
+		
+		reduce.addActionListener(new ActionListener(){
+			@Override
+			public void actionPerformed(ActionEvent e) {
+				int count = Integer.parseInt(numPlayersCounter.getText());
+				if (1 < count){
+					count--;
+					numPlayersCounter.setText(""+count);
+				}
+			}
+		});
+		increase.addActionListener(new ActionListener(){
+			@Override
+			public void actionPerformed(ActionEvent e) {
+				int count = Integer.parseInt(numPlayersCounter.getText());
+				if (count < 16){
+					count++;
+					numPlayersCounter.setText(""+count);
+				}
+			}
+		});
+		
+		numPlayersCounterPanel.add(reduce, BorderLayout.WEST);
+		numPlayersCounterPanel.add(numPlayersCounter, BorderLayout.CENTER);
+		numPlayersCounterPanel.add(increase, BorderLayout.EAST);
+		centerElement(numPlayersCounterPanel);
+		return numPlayersCounterPanel;
+	}
+
+	private JPanel createNumRoundsPlayersCounter() {
+		JPanel numRoundsCounterPanel = new JPanel(new BorderLayout());
+		JButton reduce = new BasicArrowButton(BasicArrowButton.WEST);
+		numRoundsCounter = new JLabel("1");
+		centerElement(numRoundsCounter);
+		JButton increase = new BasicArrowButton(BasicArrowButton.EAST);
+		
+		reduce.addActionListener(new ActionListener(){
+			@Override
+			public void actionPerformed(ActionEvent e) {
+				int count = Integer.parseInt(numRoundsCounter.getText());
+				if (1 < count){
+					count--;
+					numRoundsCounter.setText(""+count);
+				}
+			}
+		});
+		increase.addActionListener(new ActionListener(){
+			@Override
+			public void actionPerformed(ActionEvent e) {
+				int count = Integer.parseInt(numRoundsCounter.getText());
+				if (count < 16){
+					count++;
+					numRoundsCounter.setText(""+count);
+				}
+			}
+		});
+		
+		numRoundsCounterPanel.add(reduce, BorderLayout.WEST);
+		numRoundsCounterPanel.add(numRoundsCounter, BorderLayout.CENTER);
+		numRoundsCounterPanel.add(increase, BorderLayout.EAST);
+		centerElement(numRoundsCounterPanel);
+		return numRoundsCounterPanel;
 	}
 	
 	private void setUpGameoverPopup(){ //Sets up the gameover popup window. Anything regarding the setup of the gameover popup window and its elements goes here.
@@ -380,6 +452,26 @@ public class GUI extends JFrame implements ActionListener {
 		gameoverPanel.add(returnButton, BorderLayout.SOUTH);
 		gameoverWindow.add(gameoverPanel);
 		gameoverWindow.pack();
+	}
+	
+	private void setUpErrorPopUp() {
+		//Create
+		errorWindow = new JFrame();
+		errorWindow.setResizable(false);
+		errorWindow.setDefaultCloseOperation(JFrame.HIDE_ON_CLOSE);
+		errorWindow.setLocationRelativeTo(null);
+		
+		JPanel errorPanel = new JPanel(new BorderLayout());
+		JLabel errorLabel = new JLabel("Connection to Server failed.");
+		errorLabel.setBorder(BorderFactory.createEmptyBorder(20, 20, 20, 20));
+		JButton closeButton = createNewButton("Close", "quit");
+		centerElement(errorLabel);
+		centerElement(closeButton);
+		
+		errorPanel.add(errorLabel, BorderLayout.CENTER);
+		errorPanel.add(closeButton, BorderLayout.SOUTH);
+		errorWindow.add(errorPanel);
+		errorWindow.pack();
 	}
 	
 	private JPanel createAnswerPhase(){ //Creates panel for the games answer phase.
@@ -526,8 +618,8 @@ public class GUI extends JFrame implements ActionListener {
 
 	private void showNewgame(){ //Shows the new game window.
 		gamenameField.setText("");
-		numPlayersField.setText("");
-		numRoundsField.setText("");
+		numPlayersCounter.setText("1");
+		numRoundsCounter.setText("1");
 		newgameWindow.setEnabled(true);
 		newgameWindow.setLocationRelativeTo(mainWindow);
 		newgameButton.setVisible(true);
@@ -537,6 +629,11 @@ public class GUI extends JFrame implements ActionListener {
 	void showGameover() { //Shows the game over window.
 		gameoverWindow.setLocationRelativeTo(mainWindow);
 		gameoverWindow.setVisible(true);
+	}
+	
+	void showError() { //Shows the game over window.
+		errorWindow.setLocationRelativeTo(mainWindow);
+		errorWindow.setVisible(true);
 	}
 	
 	void statusMessage(String msg){
@@ -754,7 +851,7 @@ public class GUI extends JFrame implements ActionListener {
 		case "newgame":
 			//Send newgame tuple to server.
 			try {
-				sendNewgame(gamenameField.getText(), Integer.parseInt(numPlayersField.getText()), Integer.parseInt(numRoundsField.getText()));
+				sendNewgame(gamenameField.getText(), Integer.parseInt(numPlayersCounter.getText()), Integer.parseInt(numRoundsCounter.getText()));
 			} catch(NumberFormatException ex) {
 				statusMessage("NumberFormatException", true);
 			}
@@ -786,6 +883,11 @@ public class GUI extends JFrame implements ActionListener {
 		case "gameover":
 			//Closes the gameover window and changes gui state to joingame state.
 			gameoverWindow.dispatchEvent(new WindowEvent(gameoverWindow, WindowEvent.WINDOW_CLOSING));
+			break;
+		case "quit":
+			//Quit application by closing windows.
+			errorWindow.dispatchEvent(new WindowEvent(errorWindow, WindowEvent.WINDOW_CLOSING));
+			mainWindow.dispatchEvent(new WindowEvent(mainWindow, WindowEvent.WINDOW_CLOSING));
 			break;
 		default:
 			break;
