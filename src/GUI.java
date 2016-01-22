@@ -607,6 +607,7 @@ public class GUI extends JFrame implements ActionListener {
 	protected void sendScoreListRequest() { //Called to request a new score list.
 		try {
 			client.read(Tuple.SCORES);
+			statusMessage("");
 		} catch (Exception e) {
 			statusMessage(e.getMessage());
 		}
@@ -774,20 +775,60 @@ public class GUI extends JFrame implements ActionListener {
 		answerField.setEnabled(false);
 		answerButton.setEnabled(false);
 		
+		ActionListener action = new ActionListener(){
+			int count = 0;
+			
+			@Override
+			public void actionPerformed(ActionEvent e) {
+				String message = "Sending answer";
+				for (int i = 0; i < count; i++)
+					message += '.';
+				statusMessage(message);
+				count++;
+				if (count > 4)
+					count = 0;
+			}
+		};
+		Timer timer = new Timer(250, action);
+		timer.start();
+		
 		try {
 			client.putread(Tuple.ANSWER, answer);
+			timer.stop();
 		} catch (Exception e) {
+			timer.stop();
+			statusMessage("");
 			correctAnswerLabel.setText(e.getMessage());
 			answerField.setEnabled(true);
 			answerButton.setEnabled(true);
 			return; //If answer is correct, don't go to next phase.
 		}
 		
+		ActionListener action2 = new ActionListener(){
+			int count = 0;
+			
+			@Override
+			public void actionPerformed(ActionEvent e) {
+				String message = "Waiting for other players";
+				for (int i = 0; i < count; i++)
+					message += '.';
+				statusMessage(message);
+				count++;
+				if (count > 4)
+					count = 0;
+			}
+		};
+		Timer timer2 = new Timer(250, action2);
+		timer2.start();
+		
 		try {
 			client.read(Tuple.CHOICES);
+			timer2.stop();
+			statusMessage("");
 			resetChoosePhase();
 			nextGamePhase();
 		} catch (Exception e) {
+			timer2.stop();
 			statusMessage(e.getMessage(), true);
 		}
 	}
@@ -798,8 +839,49 @@ public class GUI extends JFrame implements ActionListener {
 		choicesList.setEnabled(false);
 		choiceButton.setEnabled(false);
 		choice = choice+1;
+		
+		ActionListener action = new ActionListener(){
+			int count = 0;
+			
+			@Override
+			public void actionPerformed(ActionEvent e) {
+				String message = "Sending choice";
+				for (int i = 0; i < count; i++)
+					message += '.';
+				statusMessage(message);
+				count++;
+				if (count > 4)
+					count = 0;
+			}
+		};
+		Timer timer = new Timer(250, action);
+		timer.start();
+		
 		client.put(Tuple.CHOOSE, choice);
+		
+		timer.stop();
+		statusMessage("");
+		
+		ActionListener action2 = new ActionListener(){
+			int count = 0;
+			
+			@Override
+			public void actionPerformed(ActionEvent e) {
+				String message = "Waiting for other players";
+				for (int i = 0; i < count; i++)
+					message += '.';
+				statusMessage(message);
+				count++;
+				if (count > 4)
+					count = 0;
+			}
+		};
+		Timer timer2 = new Timer(250, action2);
+		timer2.start();
+		
 		sendScoreListRequest();
+		
+		timer2.stop();
 		
 		resetAnswerPhase();
 		nextGamePhase();
