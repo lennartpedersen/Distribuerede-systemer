@@ -17,7 +17,7 @@ public class Client  {
 	private ObjectOutputStream sOutput; //Datastream for sending data to socket
 	private Socket socket; //The connection to the server
 	
-	private InetAddress server = InetAddress.getByName("2.106.191.230"); //Server address.
+	private InetAddress server = InetAddress.getByName("127.0.0.1"); //Server address.
 	private int port = 1500; //Server port.
 	private static Client client;
 	private boolean isGameOver, hasGameStarted, hasRequestedStart;
